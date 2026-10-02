@@ -177,6 +177,16 @@ const MainLayout = () => {
             </div>
           </main>
           
+        {/* Mobile Floating Action Button */}
+        {location.pathname !== '/create-bill' && (
+          <Link 
+            to="/create-bill" 
+            className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-[#F2842F] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-500 transition-transform active:scale-95 z-40"
+            aria-label="Create New Bill"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
+          </Link>
+        )}
         </div>
       </div>
     </I18nContext.Provider>

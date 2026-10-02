@@ -1,191 +1,161 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
-import { AuthContext } from '../context/AuthContext';
 import { I18nContext } from '../layouts/MainLayout';
-import TamilTransliterationInput from '../components/TamilTransliterationInput';
 
 const Settings = () => {
-  const { user, setUser } = useContext(AuthContext);
-  const { t, lang, setLang } = useContext(I18nContext);
-
-  const [activeTab, setActiveTab] = useState('profile');
-
-  // Profile Form
-  const [profileData, setProfileData] = useState({ name: '', mobile: '' });
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileMsg, setProfileMsg] = useState('');
-
-  // Password Form
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordMsg, setPasswordMsg] = useState('');
+  const { t } = useContext(I18nContext);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState({
+    staticQrImage: '',
+    upiId: '',
+    dynamicQrProvider: 'None',
+    razorpayKeyId: '',
+    razorpayKeySecret: ''
+  });
 
   useEffect(() => {
-    if (user) {
-      setProfileData({ name: user.name || '', mobile: user.mobile || '' });
-    }
-  }, [user]);
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    setProfileLoading(true);
-    setProfileMsg('');
-    try {
-      const { data } = await API.put('/auth/profile', profileData);
-      setUser(data.data); // Update context and header
-      setProfileMsg({ type: 'success', text: 'Profile updated successfully' });
-    } catch (err) {
-      setProfileMsg({ type: 'error', text: err.response?.data?.message || 'Unable to update profile' });
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      return setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
-    }
-    setPasswordLoading(true);
-    setPasswordMsg('');
-    try {
-      await API.put('/auth/password', {
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword
+    API.get('/auth/me')
+      .then(res => {
+        if (res.data.data.paymentSettings) {
+          setSettings(res.data.data.paymentSettings);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
       });
-      setPasswordMsg({ type: 'success', text: 'Password updated successfully' });
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      setPasswordMsg({ type: 'error', text: err.response?.data?.message || 'Current password is incorrect' });
-    } finally {
-      setPasswordLoading(false);
+  }, []);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings(prev => ({ ...prev, staticQrImage: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await API.put('/settings/payments', { paymentSettings: settings });
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Error saving settings');
+    }
+    setSaving(false);
+  };
+
+  if (loading) return <div className="p-8 text-center text-[#455B8A]">Loading settings...</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">{t('Settings')}</h1>
-        <p className="text-sm text-[#455B8A] mt-1">Manage your account and preferences.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">Account Settings</h1>
+        <p className="text-sm text-[#455B8A] mt-1">Configure your business profile and payment integrations.</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <form onSubmit={handleSave} className="bg-white p-6 sm:p-8 shadow-sm rounded-xl border border-gray-100 border-t-4 border-t-[#253C6D] space-y-8">
         
-        {/* Navigation Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-row md:flex-col">
-            <button 
-              onClick={() => setActiveTab('profile')}
-              className={`flex-1 md:flex-none px-4 py-3 text-sm font-bold text-left border-b md:border-b-0 md:border-l-4 ${activeTab === 'profile' ? 'bg-blue-50 text-[#253C6D] border-[#F2842F]' : 'text-[#455B8A] border-transparent hover:bg-gray-50'}`}
-            >
-              Profile
-            </button>
-            <button 
-              onClick={() => setActiveTab('language')}
-              className={`flex-1 md:flex-none px-4 py-3 text-sm font-bold text-left border-b md:border-b-0 md:border-l-4 ${activeTab === 'language' ? 'bg-blue-50 text-[#253C6D] border-[#F2842F]' : 'text-[#455B8A] border-transparent hover:bg-gray-50'}`}
-            >
-              Language
-            </button>
-            <button 
-              onClick={() => setActiveTab('password')}
-              className={`flex-1 md:flex-none px-4 py-3 text-sm font-bold text-left border-b md:border-b-0 md:border-l-4 ${activeTab === 'password' ? 'bg-blue-50 text-[#253C6D] border-[#F2842F]' : 'text-[#455B8A] border-transparent hover:bg-gray-50'}`}
-            >
-              Password
-            </button>
+        {/* Static QR Configuration */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2">
+            Static Merchant QR (UPI)
+          </h3>
+          <p className="text-sm text-gray-500">Upload your business UPI QR code. This will be shown on the POS payment screen for customers to scan.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <div>
+              <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">UPI ID (VPA)</label>
+              <input 
+                type="text" 
+                placeholder="e.g. merchant@upi"
+                className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]"
+                value={settings.upiId || ''}
+                onChange={e => setSettings(prev => ({ ...prev, upiId: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">QR Code Image</label>
+              {settings.staticQrImage && (
+                <div className="w-32 h-32 border border-gray-200 rounded-lg p-2 bg-white flex items-center justify-center">
+                  <img src={settings.staticQrImage} alt="QR Code" className="max-w-full max-h-full object-contain" />
+                </div>
+              )}
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-[#30497D] hover:file:bg-blue-100"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 sm:p-8">
+        {/* Dynamic QR Configuration (Optional) */}
+        <div className="space-y-4 pt-4 border-t border-gray-100">
+          <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2">
+            Dynamic QR Provider (Optional)
+          </h3>
+          <p className="text-sm text-gray-500">Enable automatic payment verification through supported providers. Leave as "None" if you prefer manual static QR reconciliation.</p>
           
-          {/* PROFILE TAB */}
-          {activeTab === 'profile' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-[#253C6D] border-b border-gray-100 pb-3">Profile Settings</h2>
-              
-              {profileMsg && (
-                <div className={`p-3 rounded-lg text-sm font-bold ${profileMsg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {profileMsg.text}
-                </div>
-              )}
+          <div>
+            <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Select Provider</label>
+            <select 
+              className="w-full sm:w-1/2 border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]"
+              value={settings.dynamicQrProvider || 'None'}
+              onChange={e => setSettings(prev => ({ ...prev, dynamicQrProvider: e.target.value }))}
+            >
+              <option value="None">None (Mock Mode / Manual)</option>
+              <option value="Razorpay">Razorpay</option>
+            </select>
+          </div>
 
-              <form onSubmit={handleProfileSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">Email (Read-only)</label>
-                  <input type="email" value={user?.email || ''} readOnly className="w-full border border-gray-200 p-2.5 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">Full Name</label>
-                  <TamilTransliterationInput language={lang} type="text" required value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">Mobile Number</label>
-                  <input type="text" required value={profileData.mobile} onChange={e => setProfileData({...profileData, mobile: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]" />
-                </div>
-                <button type="submit" disabled={profileLoading} className="bg-[#253C6D] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#30497D] transition-colors disabled:opacity-50">
-                  {profileLoading ? 'Updating...' : 'Save Changes'}
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* LANGUAGE TAB */}
-          {activeTab === 'language' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-[#253C6D] border-b border-gray-100 pb-3">Language Preferences</h2>
-              <div className="space-y-4">
-                <p className="text-sm text-[#455B8A]">Select your preferred interface language. This changes the application's menus, buttons, and labels.</p>
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setLang('en')}
-                    className={`flex-1 py-4 rounded-xl border-2 font-bold transition-all ${lang === 'en' ? 'border-[#F2842F] bg-orange-50 text-[#253C6D]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                  >
-                    English
-                  </button>
-                  <button 
-                    onClick={() => setLang('ta')}
-                    className={`flex-1 py-4 rounded-xl border-2 font-bold transition-all ${lang === 'ta' ? 'border-[#F2842F] bg-orange-50 text-[#253C6D]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                  >
-                    தமிழ் (Tamil)
-                  </button>
-                </div>
+          {settings.dynamicQrProvider === 'Razorpay' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-orange-50 p-4 rounded-xl border border-orange-100 mt-4">
+              <div className="md:col-span-2">
+                <p className="text-sm font-bold text-orange-700">Razorpay Configuration</p>
+                <p className="text-xs text-orange-600">Enter your Razorpay API credentials. These are securely stored and used to generate dynamic UPI QR codes and verify webhooks.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Key ID</label>
+                <input 
+                  type="text" 
+                  className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white text-[#253C6D]"
+                  value={settings.razorpayKeyId || ''}
+                  onChange={e => setSettings(prev => ({ ...prev, razorpayKeyId: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Key Secret</label>
+                <input 
+                  type="password" 
+                  className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white text-[#253C6D]"
+                  value={settings.razorpayKeySecret || ''}
+                  onChange={e => setSettings(prev => ({ ...prev, razorpayKeySecret: e.target.value }))}
+                />
               </div>
             </div>
           )}
-
-          {/* PASSWORD TAB */}
-          {activeTab === 'password' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-[#253C6D] border-b border-gray-100 pb-3">Change Password</h2>
-              
-              {passwordMsg && (
-                <div className={`p-3 rounded-lg text-sm font-bold ${passwordMsg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {passwordMsg.text}
-                </div>
-              )}
-
-              <form onSubmit={handlePasswordSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">Current Password</label>
-                  <input type="password" required minLength="6" value={passwordData.currentPassword} onChange={e => setPasswordData({...passwordData, currentPassword: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">New Password</label>
-                  <input type="password" required minLength="6" value={passwordData.newPassword} onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-[#455B8A] mb-1.5">Confirm New Password</label>
-                  <input type="password" required minLength="6" value={passwordData.confirmPassword} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]" />
-                </div>
-                <button type="submit" disabled={passwordLoading} className="bg-[#253C6D] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#30497D] transition-colors disabled:opacity-50">
-                  {passwordLoading ? 'Changing Password...' : 'Change Password'}
-                </button>
-              </form>
-            </div>
-          )}
-
         </div>
-      </div>
+
+        <div className="pt-6 border-t border-gray-100">
+          <button 
+            type="submit" 
+            disabled={saving}
+            className="px-6 py-3 bg-[#F2842F] text-white rounded-lg font-bold hover:bg-orange-500 shadow-md transition-colors disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

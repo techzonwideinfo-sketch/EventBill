@@ -6,6 +6,7 @@ import { generateHTML } from '../utils/billTemplate';
 import { downloadBillPdf } from '../services/billService';
 import WhatsAppModal from '../components/WhatsAppModal';
 import TamilTransliterationInput from '../components/TamilTransliterationInput';
+import PaymentScreen from '../components/PaymentScreen';
 import { transliterateText } from '../utils/tamilTransliteration';
 
 const CreateBill = () => {
@@ -13,6 +14,7 @@ const CreateBill = () => {
   const navigate = useNavigate();
   
   const [successBill, setSuccessBill] = useState(null);
+  const [checkoutBill, setCheckoutBill] = useState(null);
 
   const [formData, setFormData] = useState({
     customerSnapshot: { name: '', phone: '', address: '' },
@@ -113,7 +115,7 @@ const CreateBill = () => {
       }
       const res = await API.post('/bills', dataToSubmit);
       setLoading(false);
-      setSuccessBill(res.data.data);
+      setCheckoutBill(res.data.data);
     } catch (err) {
       setLoading(false);
       alert(err.response?.data?.message || err.message || 'Error creating bill');
@@ -137,6 +139,22 @@ const CreateBill = () => {
     });
     setCustomerMode('new');
   };
+
+  if (checkoutBill) {
+    return (
+      <PaymentScreen 
+        bill={checkoutBill}
+        onComplete={(finalBill) => {
+          setCheckoutBill(null);
+          setSuccessBill(finalBill);
+        }}
+        onCancel={() => {
+          setCheckoutBill(null);
+          setSuccessBill(checkoutBill); // treat as pending
+        }}
+      />
+    );
+  }
 
   if (successBill) {
     return (

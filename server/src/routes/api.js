@@ -1,11 +1,12 @@
 import express from 'express';
-import { register, login, getMe, updateProfile, updatePassword } from '../controllers/authController.js';
+import { register, login, getMe, updateProfile, updatePassword, forgotPassword, resetPassword } from '../controllers/authController.js';
 import { getCustomers, getCustomer, createCustomer, updateCustomer, deleteCustomer } from '../controllers/customerController.js';
 import { getBills, getBill, createBill, updateBill, deleteBill, useAsNew } from '../controllers/billController.js';
 import { getEventTypes, createEventType, updateEventType, deleteEventType } from '../controllers/eventTypeController.js';
 import { getPdf, getPublicBill } from '../controllers/pdfController.js';
 import { shareBillViaWhatsApp } from '../controllers/whatsappController.js';
 import { getStats } from '../controllers/dashboardController.js';
+import { recordPayment, updatePaymentSettings } from '../controllers/paymentController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -16,6 +17,8 @@ router.get('/health', (req, res) => {
 
 router.post('/auth/register', register);
 router.post('/auth/login', login);
+router.post('/auth/forgot-password', forgotPassword);
+router.put('/auth/reset-password/:token', resetPassword);
 router.get('/auth/me', protect, getMe);
 router.put('/auth/profile', protect, updateProfile);
 router.put('/auth/password', protect, updatePassword);
@@ -40,7 +43,10 @@ router.delete('/bills/:id', protect, deleteBill);
 router.post('/bills/:id/use-as-new', protect, useAsNew);
 router.post('/bills/:id/whatsapp', protect, shareBillViaWhatsApp);
 router.get('/bills/:id/pdf', protect, getPdf);
+router.post('/bills/:id/payments', protect, recordPayment);
 router.get('/bills/public/:token', getPublicBill);
+
+router.put('/settings/payments', protect, updatePaymentSettings);
 
 router.get('/dashboard/stats', protect, getStats);
 
