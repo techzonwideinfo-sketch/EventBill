@@ -2,6 +2,25 @@ import React, { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { I18nContext } from '../layouts/MainLayout';
 
+const SettingsSkeleton = () => (
+  <div className="max-w-3xl mx-auto space-y-6 pb-12 animate-pulse">
+    <div>
+      <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+    </div>
+    <div className="bg-white p-6 sm:p-8 shadow-sm rounded-xl border border-gray-100 border-t-4 border-t-[#253C6D] space-y-8">
+      <div className="space-y-4">
+        <div className="h-6 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start mt-6">
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+          <div className="h-32 bg-gray-200 rounded w-32"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const Settings = () => {
   const { t } = useContext(I18nContext);
   const [loading, setLoading] = useState(true);
@@ -32,9 +51,37 @@ const Settings = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload a valid image file');
+        return;
+      }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setSettings(prev => ({ ...prev, staticQrImage: reader.result }));
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 800;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setSettings(prev => ({ ...prev, staticQrImage: dataUrl }));
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -53,7 +100,7 @@ const Settings = () => {
     setSaving(false);
   };
 
-  if (loading) return <div className="p-8 text-center text-[#455B8A]">Loading settings...</div>;
+  if (loading) return <SettingsSkeleton />;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -172,11 +219,21 @@ const Settings = () => {
           <div>
             <button 
               type="button" 
-              onClick={() => {
-                const win = window.open('', '_blank');
-                win.document.write(`<html><head><style>@page { size: ${receiptWidth} auto; margin: 0; } body { width: ${receiptWidth}; font-family: monospace; text-align: center; padding: 10px; margin: 0; }</style></head><body><h3>Test Print</h3><p>Width: ${receiptWidth}</p><p>Printer is working!</p></body></html>`);
-                win.document.close();
-                setTimeout(() => { win.print(); win.close(); }, 500);
+              onClick={async () => {
+                const testHtml = `<html><head><style>@page { size: ${receiptWidth} auto; margin: 0; } body { width: ${receiptWidth}; font-family: monospace; text-align: center; padding: 10px; margin: 0; }</style></head><body><h3>EventBill Test Print</h3><p>Width: ${receiptWidth}</p><p>Printer is working!</p><p>Tamil: வணக்கம்</p></body></html>`;
+                if (window.electronAPI && window.electronAPI.printHtml) {
+                  const printRes = await window.electronAPI.printHtml(testHtml);
+                  if (printRes.success) {
+                    alert('Print job accepted by system.');
+                  } else {
+                    alert('Print failed: ' + printRes.reason);
+                  }
+                } else {
+                  const win = window.open('', '_blank');
+                  win.document.write(testHtml);
+                  win.document.close();
+                  setTimeout(() => { win.print(); win.close(); }, 500);
+                }
               }}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-sm"
             >

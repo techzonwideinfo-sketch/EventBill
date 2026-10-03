@@ -26,6 +26,8 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   }, []);
 
   const handleRecordPayment = async () => {
+    if (loading || success) return;
+    
     const amountReceivedNum = Number(amountReceived);
     if (amountReceivedNum <= 0 && bill.totalAmount > 0) {
       alert('Please enter a valid amount');
@@ -35,7 +37,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
     let paymentAmount = amountReceivedNum;
     let changeReturned = 0;
     
-    if (paymentMethod === 'Cash' && amountReceivedNum > bill.balanceAmount) {
+    if (amountReceivedNum > bill.balanceAmount) {
       paymentAmount = bill.balanceAmount;
       changeReturned = amountReceivedNum - bill.balanceAmount;
     }
@@ -61,6 +63,24 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
 
   const handleSkipPayment = () => {
     onComplete(updatedBill);
+  };
+
+  const handlePrint = async () => {
+    if (window.electronAPI && window.electronAPI.printHtml) {
+      try {
+        const { generateHTML } = await import('../utils/billTemplate');
+        const width = localStorage.getItem('receiptWidth') || '80mm';
+        const html = generateHTML(updatedBill, '', width);
+        const printRes = await window.electronAPI.printHtml(html);
+        if (!printRes.success) {
+          alert("Print failed: " + printRes.reason);
+        }
+      } catch (err) {
+        alert("Error printing receipt: " + err.message);
+      }
+    } else {
+      window.open(`/bills/${updatedBill._id}/print`, '_blank');
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -93,7 +113,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
           </div>
           
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            <button onClick={() => window.open(`/bills/${updatedBill._id}/print`, '_blank')} className="w-full px-4 py-3.5 bg-white border-2 border-[#455B8A] text-[#455B8A] rounded-xl font-bold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2 text-lg">
+            <button onClick={handlePrint} className="w-full px-4 py-3.5 bg-white border-2 border-[#455B8A] text-[#455B8A] rounded-xl font-bold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2 text-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
               Print Receipt
             </button>
@@ -216,7 +236,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
               </div>
             </div>
             
-            {paymentMethod === 'Cash' && Number(amountReceived) > bill.balanceAmount && (
+            {Number(amountReceived) > bill.balanceAmount && (
               <div className="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 flex justify-between items-center">
                 <span className="text-sm font-bold text-green-700">Change to Return:</span>
                 <span className="text-xl font-bold text-green-700">{formatCurrency(Number(amountReceived) - bill.balanceAmount)}</span>

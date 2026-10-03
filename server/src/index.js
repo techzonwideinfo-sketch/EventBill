@@ -9,14 +9,15 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/$/, '') : null;
 const allowedOrigins = [
   clientUrl,
   'http://localhost:5173',
   'http://localhost:3000',
   'app://index.html',
-  'app://-' // Some versions of electron might send this
+  'app://-', // Some versions of electron might send this
+  'app://.'  // Other versions might send this
 ].filter(Boolean);
 
 app.use(cors({

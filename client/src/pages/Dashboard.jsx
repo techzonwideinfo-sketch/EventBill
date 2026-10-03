@@ -4,6 +4,15 @@ import { I18nContext } from '../layouts/MainLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import { downloadBillPdf } from '../services/billService';
 
+const DashboardSkeleton = () => (
+  <div className="space-y-6 pb-12 animate-pulse">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>)}
+    </div>
+    <div className="h-64 bg-gray-200 rounded-xl mt-6"></div>
+  </div>
+);
+
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,8 +41,6 @@ const Dashboard = () => {
     return new Date(dateString).toLocaleDateString('en-IN');
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64 text-[#455B8A] font-medium">Loading dashboard...</div>;
-
   const hasBills = stats && stats.totalBills > 0;
 
   const filteredBills = stats?.recentBills?.filter(b => {
@@ -44,6 +51,8 @@ const Dashboard = () => {
     const custPhone = (b.customerSnapshot?.phone || b.customerId?.phone || '').toLowerCase();
     return billNo.includes(query) || custName.includes(query) || custPhone.includes(query);
   }) || [];
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6">

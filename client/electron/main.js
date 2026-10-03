@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, session, protocol, net } from 'electron';
+import { app, BrowserWindow, shell, session, protocol, net, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -79,6 +79,27 @@ app.whenReady().then(() => {
         ...details.responseHeaders,
         'Content-Security-Policy': [csp]
       }
+    });
+  });
+
+  ipcMain.handle('print-html', async (event, htmlContent) => {
+    return new Promise((resolve) => {
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      printWindow.webContents.on('did-finish-load', () => {
+        printWindow.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
+          resolve({ success, reason: failureReason });
+          printWindow.close();
+        });
+      });
+
+      printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
     });
   });
 

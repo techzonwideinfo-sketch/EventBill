@@ -7,6 +7,22 @@ import { generateHTML } from '../utils/billTemplate';
 import TamilTransliterationInput from '../components/TamilTransliterationInput';
 import { transliterateText } from '../utils/tamilTransliteration';
 
+const EditBillSkeleton = () => (
+  <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-pulse">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="h-12 bg-gray-200 rounded w-full"></div>
+        <div className="h-12 bg-gray-200 rounded w-full"></div>
+      </div>
+    </div>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+      <div className="h-32 bg-gray-200 rounded w-full"></div>
+    </div>
+  </div>
+);
+
 const EditBill = () => {
   const { t, lang } = useContext(I18nContext);
   const navigate = useNavigate();
@@ -28,6 +44,7 @@ const EditBill = () => {
       const data = res.data.data;
       setFormData({
         ...data,
+        items: data.items || [],
         eventDate: data.eventDate ? new Date(data.eventDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10),
       });
     }).catch(err => alert(err.response?.data?.message || err.message || 'Error fetching bill'));
@@ -45,17 +62,17 @@ const EditBill = () => {
   }, [id]);
 
   const addItem = () => {
-    setFormData(prev => ({...prev, items: [...prev.items, { service: '', quantity: 1, rate: 0 }]}));
+    setFormData(prev => ({...prev, items: [...(prev.items || []), { service: '', quantity: 1, rate: 0 }]}));
   };
 
   const updateItem = (index, field, value) => {
-    const newItems = [...formData.items];
+    const newItems = [...(formData.items || [])];
     newItems[index][field] = value;
     setFormData(prev => ({...prev, items: newItems}));
   };
 
   const removeItem = (index) => {
-    const newItems = formData.items.filter((_, i) => i !== index);
+    const newItems = (formData.items || []).filter((_, i) => i !== index);
     setFormData(prev => ({...prev, items: newItems}));
   };
 
@@ -70,13 +87,11 @@ const EditBill = () => {
       balanceAmount: balance,
       totalAmount: subtotal,
       totalPaid: Number(formData.advancePaid || 0),
-      items: formData.items.map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
+      items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
       paymentStatus: balance <= 0 ? 'Paid' : (formData.advancePaid > 0 ? 'Partially Paid' : 'Pending')
     };
     setPreviewHtml(generateHTML(previewBill));
   }, [formData, subtotal, balance]);
-
-  if (!formData) return <div className="flex justify-center items-center h-64 text-[#455B8A] font-medium">Loading bill data...</div>;
 
   // Transliterate 'otherEventType'
   useEffect(() => {
@@ -89,13 +104,24 @@ const EditBill = () => {
     }
   }, [formData?.otherEventType, formData?.eventType]);
 
+  const handlePrint = async () => {
+    if (window.electronAPI && window.electronAPI.printHtml) {
+      const printRes = await window.electronAPI.printHtml(previewHtml);
+      if (!printRes.success) {
+        alert("Print failed: " + printRes.reason);
+      }
+    } else {
+      window.open(`/bills/${id}/print`, '_blank');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const dataToSubmit = {
         ...formData,
-        items: formData.items.map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) }))
+        items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) }))
       };
       if (dataToSubmit.eventType === 'Other') {
         dataToSubmit.eventTypeNameEn = dataToSubmit.otherEventType;
@@ -110,6 +136,8 @@ const EditBill = () => {
     }
   };
 
+  if (!formData) return <EditBillSkeleton />;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -118,7 +146,7 @@ const EditBill = () => {
           <p className="text-sm text-[#455B8A] mt-1">Update details for the existing bill.</p>
         </div>
         <div className="flex w-full sm:w-auto gap-2">
-          <button type="button" onClick={() => window.open(`/bills/${id}/print`, '_blank')} className="flex-1 sm:flex-none bg-white border border-[#455B8A] text-[#455B8A] px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+          <button type="button" onClick={handlePrint} className="flex-1 sm:flex-none bg-white border border-[#455B8A] text-[#455B8A] px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
             <span className="hidden sm:inline">Print</span>
           </button>
@@ -278,7 +306,7 @@ const EditBill = () => {
                 <div className="w-10"></div>
               </div>
               
-              {formData.items.map((item, index) => (
+              {(formData.items || []).map((item, index) => (
                 <div key={index} className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-2 items-center bg-gray-50 p-4 sm:bg-transparent sm:p-0 rounded-lg sm:rounded-none border sm:border-none border-gray-200">
                   <div className="w-full sm:flex-1">
                     <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Service')}</label>

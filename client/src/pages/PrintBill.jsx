@@ -12,10 +12,16 @@ const PrintBill = () => {
     API.get(`/bills/${id}`).then(res => {
       const generated = generateHTML(res.data.data, '', width);
       setHtml(generated);
-      // Automatically trigger browser print dialogue after a tiny delay for rendering
-      setTimeout(() => {
-        window.print();
-      }, 500);
+      if (window.electronAPI && window.electronAPI.printHtml) {
+        window.electronAPI.printHtml(generated).then(res => {
+          if (!res.success) alert("Print failed: " + res.reason);
+          window.close();
+        });
+      } else {
+        setTimeout(() => {
+          window.print();
+        }, 500);
+      }
     }).catch(err => {
       alert("Error loading bill: " + err.message);
     });
