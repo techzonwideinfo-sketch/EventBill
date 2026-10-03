@@ -205,6 +205,16 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
         font-size: 10pt;
         color: #0f172a;
       }
+      .qr-block {
+        text-align: center;
+        margin: 3mm 0;
+      }
+      .qr-block img {
+        width: 35mm;
+        height: 35mm;
+        display: block;
+        margin: 0 auto;
+      }
     </style>
   </head>
   <body>
@@ -320,6 +330,14 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       ` : ''}
 
       <div class="divider-solid"></div>
+
+      ${bill.pendingQr ? `
+      <div class="qr-block">
+        <img src="${bill.pendingQr}" alt="Scan to Pay" />
+        <div style="font-size: 7.5pt; font-weight: bold; margin-top: 1mm; color: #475569;">${t('SCAN TO PAY', 'பணம் செலுத்த ஸ்கேன் செய்யவும்')}</div>
+      </div>
+      <div class="divider-solid"></div>
+      ` : ''}
 
       <!-- Footer -->
       <div class="footer" style="line-height: 1.5; font-size: 8pt;">

@@ -13,6 +13,9 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   const [settings, setSettings] = useState(null);
   const [success, setSuccess] = useState(false);
   const [updatedBill, setUpdatedBill] = useState(bill);
+  const [dynamicQrData, setDynamicQrData] = useState(null);
+  const [pollingStatus, setPollingStatus] = useState(false);
+  const [pollIntervalId, setPollIntervalId] = useState(null);
 
   useEffect(() => {
     // Fetch user settings to get Static QR data
@@ -24,6 +27,48 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
       })
       .catch(err => console.error(err));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pollIntervalId) clearInterval(pollIntervalId);
+    };
+  }, [pollIntervalId]);
+
+  const generateDynamicQR = async () => {
+    setLoading(true);
+    setDynamicQrData(null);
+    try {
+      const res = await API.post(`/bills/${bill._id}/dynamic-qr`);
+      setDynamicQrData(res.data.data);
+      setLoading(false);
+      startPolling(res.data.data.paymentId);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to generate Dynamic QR');
+      setLoading(false);
+    }
+  };
+
+  const startPolling = (paymentId) => {
+    if (pollIntervalId) clearInterval(pollIntervalId);
+    setPollingStatus(true);
+    
+    const id = setInterval(async () => {
+      try {
+        const res = await API.get(`/payments/${paymentId}/status`);
+        if (res.data.data.status === 'Verified' || res.data.data.status === 'Paid') {
+          clearInterval(id);
+          setPollingStatus(false);
+          // Refresh bill
+          const billRes = await API.get(`/bills/${bill._id}`);
+          setUpdatedBill(billRes.data.data);
+          setSuccess(true);
+        }
+      } catch (err) {
+        console.error('Polling error', err);
+      }
+    }, 3000);
+    setPollIntervalId(id);
+  };
 
   const handleRecordPayment = async () => {
     if (loading || success) return;
@@ -173,7 +218,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
             </button>
             {settings?.dynamicQrProvider === 'Razorpay' && (
               <button 
-                onClick={() => setPaymentMethod('DynamicQR')}
+                onClick={() => { setPaymentMethod('DynamicQR'); generateDynamicQR(); }}
                 className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'DynamicQR' ? 'border-green-500 bg-green-50 text-green-600' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
               >
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
@@ -214,27 +259,44 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
 
           {paymentMethod === 'DynamicQR' && (
             <div className="flex flex-col items-center justify-center py-6 space-y-4 text-center">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-sm">
-                <svg className="w-12 h-12 text-yellow-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <p className="font-bold text-yellow-800">Dynamic QR is in Mock Mode</p>
-                <p className="text-yellow-700 text-sm mt-2">The Razorpay API keys configured in settings will be used here to fetch a Smart Collect UPI QR code. For now, proceeding will simulate a pending manual reconciliation.</p>
-              </div>
+              {loading ? (
+                 <p className="font-bold text-gray-500">Generating Dynamic QR...</p>
+              ) : dynamicQrData ? (
+                 <>
+                   <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
+                     <img src={dynamicQrData.qrImage} alt="Dynamic UPI QR" className="w-48 h-48 object-contain" />
+                   </div>
+                   <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay exact amount: <span className="text-[#253C6D] text-lg">{formatCurrency(dynamicQrData.amount)}</span></p>
+                   {pollingStatus && (
+                     <div className="flex items-center gap-2 text-green-600 mt-2 animate-pulse">
+                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                       <span className="text-sm font-bold">Waiting for payment confirmation...</span>
+                     </div>
+                   )}
+                 </>
+              ) : (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-sm">
+                  <p className="font-bold text-yellow-800">Dynamic QR requires backend configuration</p>
+                  <button onClick={generateDynamicQR} className="mt-3 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-bold hover:bg-yellow-200 transition-colors">Retry Generate QR</button>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="space-y-4 mt-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Amount Received</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">₹</span>
-                <input 
-                  type="number" 
-                  value={amountReceived} 
-                  onChange={e => setAmountReceived(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold text-[#253C6D] focus:ring-2 focus:ring-[#30497D] outline-none transition-shadow"
-                />
+          {paymentMethod !== 'DynamicQR' && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Amount Received</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">₹</span>
+                  <input 
+                    type="number" 
+                    value={amountReceived} 
+                    onChange={e => setAmountReceived(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold text-[#253C6D] focus:ring-2 focus:ring-[#30497D] outline-none transition-shadow"
+                  />
+                </div>
               </div>
-            </div>
             
             {Number(amountReceived) > bill.balanceAmount && (
               <div className="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 flex justify-between items-center">
@@ -256,6 +318,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
               </div>
             )}
           </div>
+          )}
         </div>
 
       </main>
@@ -268,13 +331,15 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
           >
             Skip / Pay Later
           </button>
-          <button 
-            onClick={handleRecordPayment}
-            disabled={loading}
-            className="flex-[2] py-4 bg-[#253C6D] text-white rounded-xl font-bold text-lg shadow-md hover:bg-[#30497D] transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Verifying...' : 'Confirm Receipt'}
-          </button>
+          {paymentMethod !== 'DynamicQR' && (
+            <button 
+              onClick={handleRecordPayment}
+              disabled={loading}
+              className="flex-[2] py-4 bg-[#253C6D] text-white rounded-xl font-bold text-lg shadow-md hover:bg-[#30497D] transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Confirm Receipt'}
+            </button>
+          )}
         </div>
       </div>
     </div>

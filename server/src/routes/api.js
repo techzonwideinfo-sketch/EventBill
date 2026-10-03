@@ -6,7 +6,7 @@ import { getEventTypes, createEventType, updateEventType, deleteEventType } from
 import { getPdf, getPublicBill } from '../controllers/pdfController.js';
 import { shareBillViaWhatsApp } from '../controllers/whatsappController.js';
 import { getStats } from '../controllers/dashboardController.js';
-import { recordPayment, updatePaymentSettings } from '../controllers/paymentController.js';
+import { recordPayment, updatePaymentSettings, createDynamicQR, handleWebhook, getPaymentStatus } from '../controllers/paymentController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -44,6 +44,9 @@ router.post('/bills/:id/use-as-new', protect, useAsNew);
 router.post('/bills/:id/whatsapp', protect, shareBillViaWhatsApp);
 router.get('/bills/:id/pdf', protect, getPdf);
 router.post('/bills/:id/payments', protect, recordPayment);
+router.post('/bills/:id/dynamic-qr', protect, createDynamicQR);
+router.get('/payments/:id/status', protect, getPaymentStatus);
+router.post('/payments/webhook', handleWebhook);
 router.get('/bills/public/:token', getPublicBill);
 
 router.put('/settings/payments', protect, updatePaymentSettings);

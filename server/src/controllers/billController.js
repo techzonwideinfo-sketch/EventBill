@@ -1,5 +1,6 @@
 import Bill from '../models/Bill.js';
 import Customer from '../models/Customer.js';
+import Payment from '../models/Payment.js';
 import { calculateBillTotals } from '../utils/calculations.js';
 import { generateBillNumber } from '../utils/billNumberGenerator.js';
 import crypto from 'crypto';
@@ -18,7 +19,16 @@ export const getBill = async (req, res) => {
   try {
     const bill = await Bill.findOne({ _id: req.params.id, userId: req.user.id }).populate('customerId');
     if (!bill) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true, data: bill });
+    
+    let pendingQr = null;
+    if (bill.paymentStatus !== 'Paid') {
+      const activePayment = await Payment.findOne({ billId: bill._id, method: 'DynamicQR', status: 'Pending' }).sort({ createdAt: -1 });
+      if (activePayment && activePayment.gatewayPayload && activePayment.gatewayPayload.image_url) {
+        pendingQr = activePayment.gatewayPayload.image_url;
+      }
+    }
+    
+    res.json({ success: true, data: { ...bill.toObject(), pendingQr } });
   } catch (err) { 
     console.error('getBill error:', err);
     res.status(500).json({ success: false, message: 'Server error while fetching bill' }); 

@@ -28,9 +28,7 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     staticQrImage: '',
     upiId: '',
-    dynamicQrProvider: 'None',
-    razorpayKeyId: '',
-    razorpayKeySecret: ''
+    dynamicQrProvider: 'None'
   });
   const [receiptWidth, setReceiptWidth] = useState(localStorage.getItem('receiptWidth') || '80mm');
 
@@ -170,25 +168,9 @@ const Settings = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-orange-50 p-4 rounded-xl border border-orange-100 mt-4">
               <div className="md:col-span-2">
                 <p className="text-sm font-bold text-orange-700">Razorpay Configuration</p>
-                <p className="text-xs text-orange-600">Enter your Razorpay API credentials. These are securely stored and used to generate dynamic UPI QR codes and verify webhooks.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Key ID</label>
-                <input 
-                  type="text" 
-                  className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white text-[#253C6D]"
-                  value={settings.razorpayKeyId || ''}
-                  onChange={e => setSettings(prev => ({ ...prev, razorpayKeyId: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Key Secret</label>
-                <input 
-                  type="password" 
-                  className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white text-[#253C6D]"
-                  value={settings.razorpayKeySecret || ''}
-                  onChange={e => setSettings(prev => ({ ...prev, razorpayKeySecret: e.target.value }))}
-                />
+                <p className="text-xs text-orange-600 mt-1">
+                  Razorpay is selected for dynamic UPI payments. For security reasons, Razorpay API credentials must be configured securely on the backend via environment variables (<code className="bg-orange-100 px-1 rounded">RAZORPAY_KEY_ID</code>, <code className="bg-orange-100 px-1 rounded">RAZORPAY_KEY_SECRET</code>, <code className="bg-orange-100 px-1 rounded">RAZORPAY_WEBHOOK_SECRET</code>). Do not enter them here.
+                </p>
               </div>
             </div>
           )}

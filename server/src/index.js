@@ -9,7 +9,14 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ 
+  limit: '5mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl.includes('/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/$/, '') : null;
 const allowedOrigins = [
   clientUrl,

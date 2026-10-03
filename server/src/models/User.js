@@ -10,9 +10,7 @@ const userSchema = new mongoose.Schema({
   paymentSettings: {
     staticQrImage: String,
     upiId: String,
-    dynamicQrProvider: { type: String, enum: ['Razorpay', 'None'], default: 'None' },
-    razorpayKeyId: String,
-    razorpayKeySecret: String
+    dynamicQrProvider: { type: String, enum: ['Razorpay', 'None'], default: 'None' }
   }
 }, { timestamps: true });
 
