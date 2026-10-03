@@ -111,21 +111,11 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   };
 
   const handlePrint = async () => {
-    if (window.electronAPI && window.electronAPI.printHtml) {
-      try {
-        const { generateHTML } = await import('../utils/billTemplate');
-        const width = localStorage.getItem('receiptWidth') || '80mm';
-        const html = generateHTML(updatedBill, '', width);
-        const printRes = await window.electronAPI.printHtml(html);
-        if (!printRes.success) {
-          alert("Print failed: " + printRes.reason);
-        }
-      } catch (err) {
-        alert("Error printing receipt: " + err.message);
-      }
-    } else {
-      window.open(`/bills/${updatedBill._id}/print`, '_blank');
+    let printUrl = `/bills/${updatedBill._id}/print`;
+    if (window.location.protocol === 'app:') {
+      printUrl = `app://index.html/bills/${updatedBill._id}/print`;
     }
+    window.open(printUrl, '_blank', 'width=800,height=900,left=200,top=100');
   };
 
   const formatCurrency = (amount) => {

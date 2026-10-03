@@ -30,10 +30,14 @@ function createWindow() {
 
   // Intercept external links and open in default browser safely
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('app://') || url.startsWith('http://localhost')) {
+      return { action: 'allow' };
+    }
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url);
+      return { action: 'deny' };
     }
-    return { action: 'deny' };
+    return { action: 'allow' };
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {

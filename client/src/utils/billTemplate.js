@@ -288,23 +288,30 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       <div class="divider-solid"></div>
 
       <!-- Financials -->
-      <div class="fin-balance">
+      <div class="fin-total">
         <span>${t('TOTAL AMOUNT', 'மொத்த தொகை')}</span>
         <span>₹${fmt(bill.totalAmount)}</span>
       </div>
 
-      ${bill.paymentMethod ? `
-      <div class="divider"></div>
-      <div class="fin-payment">
-        <span>Payment Mode</span>
-        <span style="text-transform: uppercase;">${bill.paymentMethod}</span>
+      ${bill.totalPaid > 0 ? `
+      <div class="fin-payment" style="color: #15803d; margin-top: 1.5mm;">
+        <span>${t('TOTAL PAID', 'செலுத்திய தொகை')}</span>
+        <span>₹${fmt(bill.totalPaid)}</span>
       </div>
       ` : ''}
 
-      ${bill.amountReceived ? `
+      ${bill.balanceAmount > 0 ? `
+      <div class="fin-balance" style="margin-top: 1.5mm;">
+        <span>${t('BALANCE', 'மீதி தொகை')}</span>
+        <span>₹${fmt(bill.balanceAmount)}</span>
+      </div>
+      ` : ''}
+
+      ${bill.paymentMethod ? `
+      <div class="divider"></div>
       <div class="fin-payment">
-        <span>Amount Received</span>
-        <span>₹${fmt(bill.amountReceived)}</span>
+        <span>${t('Payment Mode', 'பணம் செலுத்தும் முறை')}</span>
+        <span style="text-transform: uppercase;">${bill.paymentMethod}</span>
       </div>
       ` : ''}
 
