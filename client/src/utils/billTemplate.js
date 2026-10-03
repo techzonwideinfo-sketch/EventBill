@@ -1,4 +1,4 @@
-export const generateHTML = (bill, fontBase64 = '') => {
+export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
   const isTamil = bill.billLanguage === 'Tamil';
 
   const t = (en, ta) => isTamil ? ta : en;
@@ -33,7 +33,7 @@ export const generateHTML = (bill, fontBase64 = '') => {
       ` : `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');`}
       
       :root {
-        --receipt-width: 80mm;
+        --receipt-width: ${width};
       }
 
       @page {
@@ -185,6 +185,14 @@ export const generateHTML = (bill, fontBase64 = '') => {
         color: #F2842F;
         margin: 1.5mm 0;
       }
+      .fin-payment {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9pt;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 1mm 0;
+      }
 
       /* Footer */
       .footer {
@@ -212,6 +220,10 @@ export const generateHTML = (bill, fontBase64 = '') => {
 
       <!-- Info -->
       <div class="info-block">
+        <div class="info-line">
+          <span class="info-lbl">Invoice No</span>
+          <span class="info-val">: ${bill.billNumber || '-'}</span>
+        </div>
         <div class="info-line">
           <span class="info-lbl">${t('Date', 'தேதி')}</span>
           <span class="info-val">: ${formatDate(bill.eventDate)}</span>
@@ -265,11 +277,47 @@ export const generateHTML = (bill, fontBase64 = '') => {
 
       <div class="divider-solid"></div>
 
-      <!-- Financials (Total Amount Only) -->
+      <!-- Financials -->
       <div class="fin-balance">
         <span>${t('TOTAL AMOUNT', 'மொத்த தொகை')}</span>
         <span>₹${fmt(bill.totalAmount)}</span>
       </div>
+
+      ${bill.paymentMethod ? `
+      <div class="divider"></div>
+      <div class="fin-payment">
+        <span>Payment Mode</span>
+        <span style="text-transform: uppercase;">${bill.paymentMethod}</span>
+      </div>
+      ` : ''}
+
+      ${bill.amountReceived ? `
+      <div class="fin-payment">
+        <span>Amount Received</span>
+        <span>₹${fmt(bill.amountReceived)}</span>
+      </div>
+      ` : ''}
+
+      ${bill.changeReturned ? `
+      <div class="fin-payment">
+        <span>Change Returned</span>
+        <span>₹${fmt(bill.changeReturned)}</span>
+      </div>
+      ` : ''}
+
+      ${bill.paymentStatus ? `
+      <div class="fin-payment">
+        <span>Payment Status</span>
+        <span style="text-transform: uppercase;">${bill.paymentStatus}</span>
+      </div>
+      ` : ''}
+
+      ${bill.paymentReference ? `
+      <div class="fin-payment">
+        <span>Ref No</span>
+        <span>${bill.paymentReference}</span>
+      </div>
+      ` : ''}
 
       <div class="divider-solid"></div>
 

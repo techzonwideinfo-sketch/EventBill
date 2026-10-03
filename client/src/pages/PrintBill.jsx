@@ -6,10 +6,11 @@ import { generateHTML } from '../utils/billTemplate';
 const PrintBill = () => {
   const { id } = useParams();
   const [html, setHtml] = useState(null);
+  const width = localStorage.getItem('receiptWidth') || '80mm';
 
   useEffect(() => {
     API.get(`/bills/${id}`).then(res => {
-      const generated = generateHTML(res.data.data, '/Event%20Logo.png');
+      const generated = generateHTML(res.data.data, '/Event%20Logo.png', width);
       setHtml(generated);
       // Automatically trigger browser print dialogue after a tiny delay for rendering
       setTimeout(() => {
@@ -18,7 +19,7 @@ const PrintBill = () => {
     }).catch(err => {
       alert("Error loading bill: " + err.message);
     });
-  }, [id]);
+  }, [id, width]);
 
   if (!html) return <div style={{ padding: '20px' }}>Loading receipt...</div>;
 
@@ -28,18 +29,18 @@ const PrintBill = () => {
         {`
           @media print {
             @page {
-              size: 80mm 200mm;
+              size: ${width} auto;
               margin: 0;
             }
             html, body {
-              width: 80mm;
+              width: ${width};
               margin: 0;
               padding: 0;
               background: white;
             }
             .print-receipt {
-              width: 80mm;
-              max-width: 80mm;
+              width: ${width};
+              max-width: ${width};
               margin: 0;
               padding: 4mm;
               box-sizing: border-box;

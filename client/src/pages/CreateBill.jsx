@@ -72,7 +72,8 @@ const CreateBill = () => {
       items: formData.items.map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
       paymentStatus: balance <= 0 ? 'Paid' : (formData.advancePaid > 0 ? 'Partially Paid' : 'Pending')
     };
-    setPreviewHtml(generateHTML(previewBill));
+    const width = localStorage.getItem('receiptWidth') || '80mm';
+    setPreviewHtml(generateHTML(previewBill, '', width));
   }, [formData, subtotal, balance]);
 
   useEffect(() => {
@@ -474,13 +475,13 @@ const CreateBill = () => {
               <span className="bg-[#253C6D] text-white w-4 h-4 rounded-full flex justify-center items-center text-[10px]">👁</span>
               Live Preview
             </h3>
-            <span className="text-xs text-gray-500 font-mono">80mm Thermal</span>
+            <span className="text-xs text-gray-500 font-mono">{localStorage.getItem('receiptWidth') || '80mm'} Thermal</span>
           </div>
           <div className="bg-[#e5e7eb] p-6 flex-1 rounded-b-xl border border-gray-300 flex justify-center overflow-auto items-start min-h-[500px]">
             <div className="shadow-lg">
                <style>
                 {`
-                  .preview-wrapper { width: 80mm; background: white; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform-origin: top center; }
+                  .preview-wrapper { width: ${localStorage.getItem('receiptWidth') || '80mm'}; background: white; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform-origin: top center; }
                   @media (max-width: 640px) { .preview-wrapper { transform: scale(0.9); } }
                 `}
               </style>

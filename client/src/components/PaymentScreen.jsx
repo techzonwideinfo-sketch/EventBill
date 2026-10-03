@@ -26,14 +26,26 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   }, []);
 
   const handleRecordPayment = async () => {
-    if (amountReceived <= 0 && bill.totalAmount > 0) {
+    const amountReceivedNum = Number(amountReceived);
+    if (amountReceivedNum <= 0 && bill.totalAmount > 0) {
       alert('Please enter a valid amount');
       return;
     }
+    
+    let paymentAmount = amountReceivedNum;
+    let changeReturned = 0;
+    
+    if (paymentMethod === 'Cash' && amountReceivedNum > bill.balanceAmount) {
+      paymentAmount = bill.balanceAmount;
+      changeReturned = amountReceivedNum - bill.balanceAmount;
+    }
+
     setLoading(true);
     try {
       const res = await API.post(`/bills/${bill._id}/payments`, {
-        amount: Number(amountReceived),
+        amount: paymentAmount,
+        amountReceived: amountReceivedNum,
+        changeReturned,
         method: paymentMethod,
         reference: reference
       });
@@ -203,6 +215,13 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
                 />
               </div>
             </div>
+            
+            {paymentMethod === 'Cash' && Number(amountReceived) > bill.balanceAmount && (
+              <div className="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 flex justify-between items-center">
+                <span className="text-sm font-bold text-green-700">Change to Return:</span>
+                <span className="text-xl font-bold text-green-700">{formatCurrency(Number(amountReceived) - bill.balanceAmount)}</span>
+              </div>
+            )}
             
             {(paymentMethod === 'StaticQR' || paymentMethod === 'Other') && (
               <div>

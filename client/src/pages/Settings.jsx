@@ -13,6 +13,7 @@ const Settings = () => {
     razorpayKeyId: '',
     razorpayKeySecret: ''
   });
+  const [receiptWidth, setReceiptWidth] = useState(localStorage.getItem('receiptWidth') || '80mm');
 
   useEffect(() => {
     API.get('/auth/me')
@@ -144,6 +145,44 @@ const Settings = () => {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Printer Configuration */}
+        <div className="space-y-4 pt-4 border-t border-gray-100">
+          <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2">
+            Printer Settings
+          </h3>
+          <p className="text-sm text-gray-500">Configure thermal printer preferences for this device.</p>
+          
+          <div>
+            <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">Receipt Width</label>
+            <select 
+              className="w-full sm:w-1/2 border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-gray-50 text-[#253C6D]"
+              value={receiptWidth}
+              onChange={e => {
+                const val = e.target.value;
+                setReceiptWidth(val);
+                localStorage.setItem('receiptWidth', val);
+              }}
+            >
+              <option value="80mm">80mm (Default Thermal)</option>
+              <option value="58mm">58mm (Small Thermal)</option>
+            </select>
+          </div>
+          <div>
+            <button 
+              type="button" 
+              onClick={() => {
+                const win = window.open('', '_blank');
+                win.document.write(`<html><head><style>@page { size: ${receiptWidth} auto; margin: 0; } body { width: ${receiptWidth}; font-family: monospace; text-align: center; padding: 10px; margin: 0; }</style></head><body><h3>Test Print</h3><p>Width: ${receiptWidth}</p><p>Printer is working!</p></body></html>`);
+                win.document.close();
+                setTimeout(() => { win.print(); win.close(); }, 500);
+              }}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors text-sm"
+            >
+              Test Print
+            </button>
+          </div>
         </div>
 
         <div className="pt-6 border-t border-gray-100">

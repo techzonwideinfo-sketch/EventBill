@@ -5,7 +5,7 @@ import User from '../models/User.js';
 export const recordPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, method, reference } = req.body;
+    const { amount, method, reference, amountReceived, changeReturned } = req.body;
 
     const bill = await Bill.findOne({ _id: id, userId: req.user.id });
     if (!bill) {
@@ -39,6 +39,11 @@ export const recordPayment = async (req, res) => {
         bill.paymentStatus = 'Partially Paid';
       }
       
+      bill.paymentMethod = method;
+      bill.paymentReference = reference;
+      if (amountReceived !== undefined) bill.amountReceived = Number(amountReceived);
+      if (changeReturned !== undefined) bill.changeReturned = Number(changeReturned);
+
       await bill.save();
     }
 
