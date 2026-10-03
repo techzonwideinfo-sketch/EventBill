@@ -21,8 +21,6 @@
     "win": {
       "target": "nsis",
       "icon": "assets/icon.png",
-      "certificateFile": "${env.WIN_CSC_LINK}",
-      "certificatePassword": "${env.WIN_CSC_KEY_PASSWORD}",
       "signAndEditExecutable": true
     },
     "nsis": {
