@@ -111,7 +111,7 @@ const EditBill = () => {
         alert("Print failed: " + printRes.reason);
       }
     } else {
-      window.open(`/bills/${id}/print`, '_blank');
+      window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${id}/print` : `/bills/${id}/print`, '_blank');
     }
   };
 
@@ -142,7 +142,7 @@ const EditBill = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">Edit Bill: {formData.billNumber}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">Edit Bill</h1>
           <p className="text-sm text-[#455B8A] mt-1">Update details for the existing bill.</p>
         </div>
         <div className="flex w-full sm:w-auto gap-2">

@@ -130,7 +130,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
             <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
           </div>
           <h2 className="text-3xl font-bold text-[#253C6D] text-center">Payment Verified!</h2>
-          <p className="text-[#455B8A] text-lg text-center">Invoice <span className="font-mono font-bold text-[#253C6D]">{updatedBill.billNumber}</span> has been updated.</p>
+          <p className="text-[#455B8A] text-lg text-center">Payment successfully applied to bill.</p>
           
           <div className="w-full bg-gray-50 p-5 rounded-xl border border-gray-200 text-sm mb-6 space-y-3">
             <div className="flex justify-between">
@@ -179,12 +179,12 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
         {/* Bill Summary */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex justify-between items-center">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Invoice Amount</p>
-            <p className="text-3xl font-bold text-[#253C6D]">{formatCurrency(bill.balanceAmount)}</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Bill Amount</p>
+            <p className="text-3xl font-bold text-[#253C6D]">{formatCurrency(bill.totalAmount)}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500 font-bold mb-1">Invoice No</p>
-            <p className="font-mono font-bold text-[#455B8A]">{bill.billNumber}</p>
+            <p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">Outstanding Balance</p>
+            <p className="font-bold text-3xl text-[#F2842F]">{formatCurrency(bill.balanceAmount)}</p>
           </div>
         </div>
 
@@ -204,7 +204,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
               className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'StaticQR' ? 'border-[#F2842F] bg-orange-50 text-[#F2842F]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
             >
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-              Static QR
+              Manual UPI
             </button>
             {settings?.dynamicQrProvider === 'Razorpay' && (
               <button 
@@ -212,16 +212,9 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
                 className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'DynamicQR' ? 'border-green-500 bg-green-50 text-green-600' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
               >
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                Dynamic QR
+                Automatic UPI
               </button>
             )}
-            <button 
-              onClick={() => setPaymentMethod('Other')}
-              className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'Other' ? 'border-[#F2842F] bg-orange-50 text-[#F2842F]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'} ${settings?.dynamicQrProvider !== 'Razorpay' ? 'col-span-2 sm:col-span-1' : ''}`}
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-              Card / Net
-            </button>
           </div>
         </div>
 

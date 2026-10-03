@@ -231,10 +231,6 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       <!-- Info -->
       <div class="info-block">
         <div class="info-line">
-          <span class="info-lbl">Invoice No</span>
-          <span class="info-val">: ${bill.billNumber || '-'}</span>
-        </div>
-        <div class="info-line">
           <span class="info-lbl">${t('Date', 'தேதி')}</span>
           <span class="info-val">: ${formatDate(bill.eventDate)}</span>
         </div>

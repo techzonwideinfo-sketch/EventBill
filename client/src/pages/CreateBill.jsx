@@ -64,7 +64,6 @@ const CreateBill = () => {
   useEffect(() => {
     const previewBill = {
       ...formData,
-      billNumber: 'PREVIEW',
       subtotal: subtotal,
       balanceAmount: balance,
       totalAmount: subtotal,
@@ -165,7 +164,7 @@ const CreateBill = () => {
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
           </div>
           <h2 className="text-2xl font-bold text-[#253C6D] mb-1">Bill Created Successfully!</h2>
-          <p className="text-[#455B8A] font-mono font-bold text-lg mb-6">{successBill.billNumber}</p>
+          <p className="text-[#455B8A] text-sm mt-2 mb-6">Bill has been successfully generated and saved.</p>
           
           <div className="grid grid-cols-3 gap-2 bg-gray-50 p-4 rounded-lg text-sm mb-8 text-left">
             <div>
@@ -183,7 +182,7 @@ const CreateBill = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button onClick={() => window.open(`/bills/${successBill._id}/print`, '_blank')} className="px-4 py-2.5 bg-white border border-[#455B8A] text-[#455B8A] rounded-lg font-semibold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2">
+            <button onClick={() => window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${successBill._id}/print` : `/bills/${successBill._id}/print`, '_blank')} className="px-4 py-2.5 bg-white border border-[#455B8A] text-[#455B8A] rounded-lg font-semibold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
               Print
             </button>

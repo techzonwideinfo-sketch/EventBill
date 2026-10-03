@@ -80,8 +80,8 @@ const WhatsAppModal = ({ isOpen, onClose, bill }) => {
               <p className="font-semibold text-[#253C6D]">{customerPhone || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Bill</p>
-              <p className="font-semibold text-[#253C6D]">{bill.billNumber}</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Event</p>
+              <p className="font-semibold text-[#253C6D]">{bill.eventType || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total</p>

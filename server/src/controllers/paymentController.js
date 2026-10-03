@@ -221,6 +221,10 @@ export const handleWebhook = async (req, res) => {
       }
 
       if (payment) {
+        if (payment.status === 'Verified') {
+          return res.status(200).json({ status: 'ok', message: 'Already processed' });
+        }
+
         // Mark payment as Verified
         payment.status = 'Verified';
         payment.reference = payload.event === 'qr_code.credited' ? payload.payload.payment.entity.id : entity.id;

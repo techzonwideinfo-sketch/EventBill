@@ -33,7 +33,11 @@ export const printReceipt = async (htmlContent, billId) => {
   // Default fallback: Standard Browser Print
   // We use the existing `/bills/:id/print` route which opens a new tab and triggers window.print()
   try {
-    const printWindow = window.open(`/bills/${billId}/print`, '_blank');
+    let printUrl = `/bills/${billId}/print`;
+    if (window.location.protocol === 'app:') {
+      printUrl = `app://index.html#/bills/${billId}/print`;
+    }
+    const printWindow = window.open(printUrl, '_blank');
     if (!printWindow) {
       throw new Error('Popup blocked. Please allow popups for printing.');
     }

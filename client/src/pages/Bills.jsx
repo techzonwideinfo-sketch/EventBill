@@ -81,7 +81,7 @@ const Bills = () => {
     const billNo = b.billNumber?.toLowerCase() || '';
     const custName = (b.customerSnapshot?.name || b.customerId?.name || '').toLowerCase();
     
-    const matchesSearch = !searchQuery || billNo.includes(query) || custName.includes(query);
+    const matchesSearch = !searchQuery || custName.includes(query);
     const matchesStatus = !statusFilter || b.paymentStatus === statusFilter;
     const matchesEvent = !eventFilter || b.eventType === eventFilter;
     
@@ -110,7 +110,7 @@ const Bills = () => {
         <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-col md:flex-row gap-3">
           <input 
             type="text" 
-            placeholder="Search Bill No, Customer..." 
+            placeholder="Search Customer Name..." 
             className="border border-gray-200 p-2.5 rounded-lg flex-1 outline-none focus:ring-2 focus:ring-[#30497D] focus:border-transparent text-sm bg-gray-50 transition-shadow"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -150,7 +150,6 @@ const Bills = () => {
               <table className="w-full text-left whitespace-nowrap">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-5 py-3 text-xs font-bold text-[#455B8A] uppercase tracking-wider">Bill No</th>
                     <th className="px-5 py-3 text-xs font-bold text-[#455B8A] uppercase tracking-wider">{t('Customer')}</th>
                     <th className="px-5 py-3 text-xs font-bold text-[#455B8A] uppercase tracking-wider">{t('Event')}</th>
                     <th className="px-5 py-3 text-xs font-bold text-[#455B8A] uppercase tracking-wider text-right">{t('Total')}</th>
@@ -163,7 +162,6 @@ const Bills = () => {
                 <tbody className="divide-y divide-gray-100">
                   {filteredBills.map(b => (
                     <tr key={b._id} className="hover:bg-blue-50/50 transition-colors">
-                      <td className="px-5 py-4 font-mono text-sm text-[#253C6D] font-bold">{b.billNumber}</td>
                       <td className="px-5 py-4 text-sm text-gray-800 font-medium">{b.customerSnapshot?.name || (b.customerId ? b.customerId.name : '')}</td>
                       <td className="px-5 py-4 text-sm text-gray-600">
                         <div>{b.eventType}</div>
@@ -213,7 +211,6 @@ const Bills = () => {
                 <div key={b._id} className="p-4 space-y-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="font-mono text-sm text-[#253C6D] font-bold">{b.billNumber}</div>
                       <div className="text-sm font-semibold text-gray-800 mt-1">{b.customerSnapshot?.name || (b.customerId ? b.customerId.name : '')}</div>
                       <div className="text-xs text-gray-500">{b.eventType} • {formatDate(b.eventDate || b.createdAt)}</div>
                     </div>
