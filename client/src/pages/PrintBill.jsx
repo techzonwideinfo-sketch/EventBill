@@ -10,7 +10,7 @@ const PrintBill = () => {
 
   useEffect(() => {
     API.get(`/bills/${id}`).then(res => {
-      const generated = generateHTML(res.data.data, '/Event%20Logo.png', width);
+      const generated = generateHTML(res.data.data, '', width);
       setHtml(generated);
       // Automatically trigger browser print dialogue after a tiny delay for rendering
       setTimeout(() => {

@@ -1,0 +1,5 @@
+{
+  "appId": "com.eventbill.app",
+  "appName": "EventBill",
+  "webDir": "dist"
+}
