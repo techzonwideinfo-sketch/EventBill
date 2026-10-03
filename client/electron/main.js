@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell, session, protocol, net, ipcMain } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,7 +64,13 @@ app.whenReady().then(() => {
     const urlPath = request.url.slice('app://'.length);
     // Remove query params or hashes
     const cleanUrlPath = new URL(request.url).pathname.replace(/^\/+/, '');
-    const resolvedPath = path.join(__dirname, '../dist', cleanUrlPath || 'index.html');
+    let resolvedPath = path.join(__dirname, '../dist', cleanUrlPath || 'index.html');
+    
+    // Fallback to index.html for SPA routing
+    if (!fs.existsSync(resolvedPath)) {
+      resolvedPath = path.join(__dirname, '../dist', 'index.html');
+    }
+    
     return net.fetch(pathToFileURL(resolvedPath).toString());
   });
 
