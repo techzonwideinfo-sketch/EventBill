@@ -3,6 +3,7 @@ import { register, login, getMe, updateProfile, updatePassword, forgotPassword, 
 import { getCustomers, getCustomer, createCustomer, updateCustomer, deleteCustomer } from '../controllers/customerController.js';
 import { getBills, getBill, createBill, updateBill, deleteBill, useAsNew } from '../controllers/billController.js';
 import { getEventTypes, createEventType, updateEventType, deleteEventType } from '../controllers/eventTypeController.js';
+import { getServices, createService, updateService, deleteService } from '../controllers/serviceController.js';
 import { getPdf, getPublicBill } from '../controllers/pdfController.js';
 import { shareBillViaWhatsApp } from '../controllers/whatsappController.js';
 import { getStats } from '../controllers/dashboardController.js';
@@ -27,6 +28,11 @@ router.get('/event-types', protect, getEventTypes);
 router.post('/event-types', protect, createEventType);
 router.put('/event-types/:id', protect, updateEventType);
 router.delete('/event-types/:id', protect, deleteEventType);
+
+router.get('/event-types/:eventId/services', protect, getServices);
+router.post('/event-types/:eventId/services', protect, createService);
+router.put('/services/:id', protect, updateService);
+router.delete('/services/:id', protect, deleteService);
 
 
 router.get('/customers', protect, getCustomers);

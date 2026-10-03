@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import API from '../services/api';
 import { I18nContext } from '../layouts/MainLayout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { generateHTML } from '../utils/billTemplate';
 import { downloadBillPdf } from '../services/billService';
 import WhatsAppModal from '../components/WhatsAppModal';
@@ -12,28 +12,28 @@ import { transliterateText } from '../utils/tamilTransliteration';
 const CreateBill = () => {
   const { t, lang } = useContext(I18nContext);
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedEvent = location.state?.selectedEvent;
   
   const [successBill, setSuccessBill] = useState(null);
   const [checkoutBill, setCheckoutBill] = useState(null);
 
   const [formData, setFormData] = useState({
     customerSnapshot: { name: '', phone: '', address: '' },
-    eventType: 'Marriage',
-    eventTypeNameEn: 'Marriage',
-    eventTypeNameTa: 'திருமணம்',
+    eventType: selectedEvent ? selectedEvent.name : '',
+    eventTypeNameEn: selectedEvent ? selectedEvent.name : '',
+    eventTypeNameTa: selectedEvent ? (selectedEvent.tamilName || selectedEvent.name) : '',
     otherEventType: '',
     otherEventTypeTa: '',
     eventDate: new Date().toISOString().slice(0,10),
-    venue: '',
+    venue: selectedEvent?.defaultVenue || '',
     items: [{ service: '', quantity: 1, rate: 0 }],
     advancePaid: 0,
     billLanguage: 'English',
     notes: ''
   });
   
-  const [eventTypes, setEventTypes] = useState([]);
-  const [eventTypesLoading, setEventTypesLoading] = useState(true);
-  const [eventTypesError, setEventTypesError] = useState(false);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [customerMode, setCustomerMode] = useState('new');
@@ -76,30 +76,32 @@ const CreateBill = () => {
   }, [formData, subtotal, balance]);
 
   useEffect(() => {
+    if (!selectedEvent) {
+      navigate('/select-event');
+      return;
+    }
+
     API.get('/customers').then(res => {
       setCustomers(res.data.data);
     }).catch(err => console.error(err));
 
-    setEventTypesLoading(true);
-    setEventTypesError(false);
-    API.get('/event-types').then(res => {
-      const activeTypes = res.data.data.filter(e => e.isActive);
-      setEventTypes(activeTypes);
-      if (activeTypes.length > 0 && formData.eventType === 'Marriage' && !activeTypes.find(e => e.name === 'Marriage')) {
-        setFormData(prev => ({...prev, eventType: activeTypes[0].name, eventTypeNameEn: activeTypes[0].name, eventTypeNameTa: activeTypes[0].tamilName || activeTypes[0].name}));
-      } else if (activeTypes.length > 0 && !formData.eventType) {
-        setFormData(prev => ({...prev, eventType: activeTypes[0].name, eventTypeNameEn: activeTypes[0].name, eventTypeNameTa: activeTypes[0].tamilName || activeTypes[0].name}));
-      } else if (activeTypes.length > 0 && formData.eventType === 'Marriage') {
-        const m = activeTypes.find(e => e.name === 'Marriage');
-        setFormData(prev => ({...prev, eventTypeNameEn: m.name, eventTypeNameTa: m.tamilName || m.name}));
+    setServicesLoading(true);
+    API.get(`/event-types/${selectedEvent._id}/services`).then(res => {
+      const activeServices = res.data.data.filter(s => s.isActive);
+      if (activeServices.length > 0) {
+        const preloadedItems = activeServices.map(s => ({
+          service: s.name,
+          quantity: s.defaultQuantity || 1,
+          rate: s.defaultUnitPrice || 0
+        }));
+        setFormData(prev => ({ ...prev, items: preloadedItems }));
       }
-      setEventTypesLoading(false);
+      setServicesLoading(false);
     }).catch(err => {
       console.error(err);
-      setEventTypesError(true);
-      setEventTypesLoading(false);
+      setServicesLoading(false);
     });
-  }, []);
+  }, [selectedEvent, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,6 +109,7 @@ const CreateBill = () => {
     try {
       const dataToSubmit = {
         ...formData,
+        eventLogo: selectedEvent?.logo || '',
         items: formData.items.map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) }))
       };
       if (dataToSubmit.eventType === 'Other') {
@@ -290,49 +293,9 @@ const CreateBill = () => {
                 </h3>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Event Type')}</label>
-                  {eventTypesError ? (
-                    <div className="text-sm text-red-500 bg-red-50 p-2.5 rounded-lg border border-red-200">
-                      Unable to load event types. Please refresh and try again.
-                    </div>
-                  ) : (
-                    <select 
-                      className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed" 
-                      value={formData.eventType} 
-                      onChange={e=>{
-                        const selectedType = eventTypes.find(t => t.name === e.target.value);
-                        if (selectedType) {
-                          setFormData(prev=>({...prev, eventType: e.target.value, eventTypeNameEn: selectedType.name, eventTypeNameTa: selectedType.tamilName || selectedType.name}));
-                        } else {
-                           setFormData(prev=>({...prev, eventType: e.target.value, eventTypeNameEn: e.target.value, eventTypeNameTa: e.target.value}));
-                        }
-                      }}
-                      disabled={eventTypesLoading}
-                    >
-                      {eventTypesLoading ? (
-                        <option value="">Loading event types...</option>
-                      ) : (
-                        <>
-                          {eventTypes.map(type => {
-                            const val = type.name;
-                            const display = (lang === 'ta' && type.tamilName) ? type.tamilName : type.name;
-                            return <option key={type._id} value={val}>{display}</option>;
-                          })}
-                          {eventTypes.length === 0 && <option value="Marriage">{lang === 'ta' ? 'திருமணம்' : 'Marriage'}</option>}
-                          <option value="Other">{lang === 'ta' ? 'மற்றவை' : 'Other'}</option>
-                        </>
-                      )}
-                    </select>
-                  )}
-                  {formData.eventType === 'Other' && (
-                    <input 
-                      type="text" 
-                      placeholder={lang === 'ta' ? 'நிகழ்வு வகையை உள்ளிடவும்' : 'Enter Event Type'} 
-                      required 
-                      className="w-full border border-gray-200 p-2.5 mt-2 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-white text-[#253C6D] transition-shadow" 
-                      value={formData.otherEventType || ''} 
-                      onChange={e=>setFormData(prev=>({...prev, otherEventType: e.target.value}))} 
-                    />
-                  )}
+                  <div className="w-full border border-gray-200 p-2.5 rounded-lg bg-gray-100 text-gray-500 font-medium">
+                    {lang === 'ta' && selectedEvent?.tamilName ? selectedEvent.tamilName : selectedEvent?.name}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Date')}</label>

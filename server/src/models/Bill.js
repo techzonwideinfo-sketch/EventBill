@@ -11,6 +11,7 @@ const billSchema = new mongoose.Schema({
   eventTypeNameTa: { type: String },
   eventDate: { type: Date, required: true },
   venue: { type: String },
+  eventLogo: { type: String },
   guestCount: { type: Number },
   items: [{
     service: String,

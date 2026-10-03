@@ -99,8 +99,8 @@ const Bills = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">{t('Bill History')}</h1>
           <p className="text-sm text-[#455B8A] mt-1">Manage and track your event bills.</p>
         </div>
-        <Link to="/create-bill" className="bg-[#F2842F] text-white px-5 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors w-full sm:w-auto text-center">
-          + {t('Create Bill')}
+        <Link to="/select-event" className="bg-[#F2842F] text-white px-5 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors w-full sm:w-auto text-center">
+          + {t('Select Event')}
         </Link>
       </div>
       

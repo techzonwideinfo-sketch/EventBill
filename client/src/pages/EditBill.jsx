@@ -188,55 +188,9 @@ const EditBill = () => {
                 </h3>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Event Type')}</label>
-                  {eventTypesError ? (
-                    <div className="text-sm text-red-500 bg-red-50 p-2.5 rounded-lg border border-red-200">
-                      Unable to load event types. Please refresh and try again.
-                    </div>
-                  ) : (
-                    <select 
-                      className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow disabled:opacity-60 disabled:cursor-not-allowed" 
-                      value={formData.eventType} 
-                      onChange={e=>{
-                        const selectedType = eventTypes.find(t => t.name === e.target.value);
-                        if (selectedType) {
-                          setFormData(prev=>({...prev, eventType: e.target.value, eventTypeNameEn: selectedType.name, eventTypeNameTa: selectedType.tamilName || selectedType.name}));
-                        } else {
-                           setFormData(prev=>({...prev, eventType: e.target.value, eventTypeNameEn: e.target.value, eventTypeNameTa: e.target.value}));
-                        }
-                      }}
-                      disabled={eventTypesLoading}
-                    >
-                      {eventTypesLoading ? (
-                        <option value="">Loading event types...</option>
-                      ) : (
-                        <>
-                          {eventTypes.map(type => {
-                            const val = type.name;
-                            const display = (lang === 'ta' && type.tamilName) ? type.tamilName : type.name;
-                            return <option key={type._id} value={val}>{display}</option>;
-                          })}
-                          {eventTypes.length === 0 && <option value="Marriage">{lang === 'ta' ? 'திருமணம்' : 'Marriage'}</option>}
-                          {/* Make sure the existing event type shows up even if it was disabled */}
-                          {formData.eventType && eventTypes.length > 0 && formData.eventType !== 'Other' && !eventTypes.find(e => {
-                            return e.name === formData.eventType;
-                          }) && (
-                            <option value={formData.eventType}>{formData.eventTypeNameTa && lang === 'ta' ? formData.eventTypeNameTa : formData.eventType}</option>
-                          )}
-                          <option value="Other">{lang === 'ta' ? 'மற்றவை' : 'Other'}</option>
-                        </>
-                      )}
-                    </select>
-                  )}
-                  {formData.eventType === 'Other' && (
-                    <input 
-                      type="text" 
-                      placeholder={lang === 'ta' ? 'நிகழ்வு வகையை உள்ளிடவும்' : 'Enter Event Type'} 
-                      required 
-                      className="w-full border border-gray-200 p-2.5 mt-2 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-white text-[#253C6D] transition-shadow" 
-                      value={formData.otherEventType || ''} 
-                      onChange={e=>setFormData(prev=>({...prev, otherEventType: e.target.value}))} 
-                    />
-                  )}
+                  <div className="w-full border border-gray-200 p-2.5 rounded-lg bg-gray-100 text-gray-500 font-medium">
+                    {lang === 'ta' && formData.eventTypeNameTa ? formData.eventTypeNameTa : formData.eventType}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Date')}</label>

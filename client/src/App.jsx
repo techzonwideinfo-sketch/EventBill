@@ -38,6 +38,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Bills from './pages/Bills';
+import SelectEvent from './pages/SelectEvent';
 import CreateBill from './pages/CreateBill';
 import EditBill from './pages/EditBill';
 import Customers from './pages/Customers';
@@ -58,6 +59,7 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="bills" element={<Bills />} />
+            <Route path="select-event" element={<SelectEvent />} />
             <Route path="create-bill" element={<CreateBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="customers" element={<Customers />} />

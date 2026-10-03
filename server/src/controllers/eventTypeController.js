@@ -12,7 +12,7 @@ export const getEventTypes = async (req, res) => {
 
 export const createEventType = async (req, res) => {
   try {
-    const { name, tamilName } = req.body;
+    const { name, tamilName, logo, description, defaultVenue } = req.body;
     if (!name || !name.trim()) {
       return res.status(422).json({ success: false, message: 'Event name is required' });
     }
@@ -25,7 +25,10 @@ export const createEventType = async (req, res) => {
     const event = await EventType.create({
       userId: req.user.id,
       name: name.trim(),
-      tamilName: tamilName ? tamilName.trim() : ''
+      tamilName: tamilName ? tamilName.trim() : '',
+      logo: logo || '',
+      description: description || '',
+      defaultVenue: defaultVenue || ''
     });
     res.status(201).json({ success: true, data: event });
   } catch (err) {
@@ -35,7 +38,7 @@ export const createEventType = async (req, res) => {
 
 export const updateEventType = async (req, res) => {
   try {
-    const { name, tamilName, isActive } = req.body;
+    const { name, tamilName, logo, description, defaultVenue, isActive } = req.body;
     const event = await EventType.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!event) {
@@ -51,6 +54,9 @@ export const updateEventType = async (req, res) => {
     }
     
     if (tamilName !== undefined) event.tamilName = tamilName.trim();
+    if (logo !== undefined) event.logo = logo;
+    if (description !== undefined) event.description = description.trim();
+    if (defaultVenue !== undefined) event.defaultVenue = defaultVenue.trim();
     if (isActive !== undefined) event.isActive = isActive;
 
     await event.save();

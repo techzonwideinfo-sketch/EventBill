@@ -222,6 +222,7 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       
       <!-- Header -->
       <div class="header">
+        ${bill.eventLogo ? `<img src="${bill.eventLogo}" style="max-width: 30mm; max-height: 30mm; display: block; margin: 0 auto 1mm auto;" alt="Event Logo" />` : ''}
         <h1>EVENTBILL</h1>
         <div class="event-type-display">${eventName}</div>
       </div>
