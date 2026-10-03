@@ -19,14 +19,12 @@ export const downloadBillPdf = async (billId, billNumber = 'Bill') => {
     link.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    if (error.response) {
-      if (error.response.status === 401) {
-        alert('Your session has expired. Please log in again.');
-      } else if (error.response.status === 403) {
-        alert('You do not have permission to access this bill.');
-      } else if (error.response.status === 404) {
-        alert('Bill not found.');
-      } else {
+    if (error.response && error.response.data instanceof Blob) {
+      const text = await error.response.data.text();
+      try {
+        const json = JSON.parse(text);
+        alert(json.message || 'Unable to generate PDF.');
+      } catch {
         alert('Unable to generate PDF. Please try again.');
       }
     } else {
@@ -50,14 +48,12 @@ export const viewBillPdf = async (billId) => {
     // but doing it immediately closes it in some browsers before the new tab renders.
     setTimeout(() => window.URL.revokeObjectURL(url), 10000);
   } catch (error) {
-    if (error.response) {
-      if (error.response.status === 401) {
-        alert('Your session has expired. Please log in again.');
-      } else if (error.response.status === 403) {
-        alert('You do not have permission to access this bill.');
-      } else if (error.response.status === 404) {
-        alert('Bill not found.');
-      } else {
+    if (error.response && error.response.data instanceof Blob) {
+      const text = await error.response.data.text();
+      try {
+        const json = JSON.parse(text);
+        alert(json.message || 'Unable to generate PDF.');
+      } catch {
         alert('Unable to generate PDF. Please try again.');
       }
     } else {

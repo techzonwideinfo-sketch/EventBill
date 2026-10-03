@@ -99,15 +99,19 @@ app.whenReady().then(() => {
         show: false,
         webPreferences: {
           nodeIntegration: false,
-          contextIsolation: true
+          contextIsolation: true,
+          webSecurity: false
         }
       });
 
       printWindow.webContents.on('did-finish-load', () => {
-        printWindow.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
-          resolve({ success, reason: failureReason });
-          printWindow.close();
-        });
+        // Give time for images and fonts to render
+        setTimeout(() => {
+          printWindow.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
+            resolve({ success, reason: failureReason });
+            printWindow.close();
+          });
+        }, 800);
       });
 
       printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);

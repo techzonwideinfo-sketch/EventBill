@@ -18,7 +18,9 @@ const PrintBill = () => {
   }, [id, width]);
 
   const handlePrintClick = () => {
-    window.print();
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
 
   const handleClose = () => {

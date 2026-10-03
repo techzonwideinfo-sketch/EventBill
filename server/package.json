@@ -7,7 +7,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/seeds/demoSeed.js",
-    "build": "npx puppeteer browsers install chrome",
+    "build": "bash render-build.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
