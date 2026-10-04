@@ -17,10 +17,10 @@ const CreateBill = () => {
   const [checkoutBill, setCheckoutBill] = useState(null);
 
   const [formData, setFormData] = useState({
-    customerSnapshot: { name: '', phone: '', address: '' },
-    eventType: 'E-MOI',
-    eventTypeNameEn: 'E-MOI',
-    eventTypeNameTa: 'E-MOI',
+    customerSnapshot: { name: '', phone: '', address: '', sonOf: '', nativePlace: '' },
+    eventType: location.state?.selectedEvent?.name || 'E-MOI',
+    eventTypeNameEn: location.state?.selectedEvent?.name || 'E-MOI',
+    eventTypeNameTa: location.state?.selectedEvent?.tamilName || 'E-MOI',
     otherEventType: '',
     otherEventTypeTa: '',
     eventDate: new Date().toISOString().slice(0,10),
@@ -57,6 +57,12 @@ const CreateBill = () => {
 
   const subtotal = formData.items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.rate)), 0);
   const balance = subtotal - Number(formData.advancePaid);
+
+  useEffect(() => {
+    if (!location.state?.selectedEvent) {
+      navigate('/select-event');
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     const previewBill = {
@@ -99,7 +105,7 @@ const CreateBill = () => {
   const handleCreateAnother = () => {
     setSuccessBill(null);
     setFormData({
-      customerSnapshot: { name: '', phone: '', address: '' },
+      customerSnapshot: { name: '', phone: '', address: '', sonOf: '', nativePlace: '' },
       eventType: 'E-MOI',
       eventTypeNameEn: 'E-MOI',
       eventTypeNameTa: 'E-MOI',
@@ -218,7 +224,7 @@ const CreateBill = () => {
                       onClick={() => {
                         setCustomerMode(prev => prev === 'new' ? 'existing' : 'new');
                         if (customerMode === 'existing') {
-                          setFormData(prev => ({...prev, customerSnapshot: { name: '', phone: '', address: '' }, customerId: null}));
+                          setFormData(prev => ({...prev, customerSnapshot: { name: '', phone: '', address: '', sonOf: '', nativePlace: '' }, customerId: null}));
                         }
                       }}
                       className="text-xs font-bold text-[#F2842F] hover:text-orange-600"
@@ -237,7 +243,7 @@ const CreateBill = () => {
                           setFormData(prev => ({
                             ...prev,
                             customerId: selected._id,
-                            customerSnapshot: { name: selected.name, phone: selected.phone, address: selected.address || '' }
+                            customerSnapshot: { name: selected.name, phone: selected.phone, address: selected.address || '', sonOf: selected.sonOf || '', nativePlace: selected.nativePlace || '' }
                           }));
                         }
                       }}
@@ -252,6 +258,8 @@ const CreateBill = () => {
                   <div className="space-y-4">
                     <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder="Customer Name" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot.name} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, name: e.target.value}}))} disabled={customerMode === 'existing'} />
                     <input type="text" placeholder="Mobile Number" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot.phone} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, phone: e.target.value}}))} disabled={customerMode === 'existing'} />
+                    <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder="S/O Name" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot.sonOf} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, sonOf: e.target.value}}))} disabled={customerMode === 'existing'} />
+                    <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder="Native Place" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot.nativePlace} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, nativePlace: e.target.value}}))} disabled={customerMode === 'existing'} />
                   </div>
                 </div>
               </div>
@@ -264,7 +272,10 @@ const CreateBill = () => {
                 </h3>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Date')}</label>
-                  <input type="date" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.eventDate} onChange={e=>setFormData(prev=>({...prev, eventDate: e.target.value}))} />
+                  <input type="date" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow mb-4" value={formData.eventDate} onChange={e=>setFormData(prev=>({...prev, eventDate: e.target.value}))} />
+                  
+                  <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Venue')}</label>
+                  <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder={t('Venue')} className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.venue} onChange={e=>setFormData(prev=>({...prev, venue: e.target.value}))} />
                 </div>
               </div>
             </div>

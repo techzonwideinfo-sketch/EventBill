@@ -178,6 +178,14 @@ const EditBill = () => {
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Mobile')}</label>
                   <input type="text" placeholder="Mobile Number" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot?.phone || ''} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, phone: e.target.value}}))} />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('S/O Name')}</label>
+                  <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder="S/O Name" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot?.sonOf || ''} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, sonOf: e.target.value}}))} />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Native Place')}</label>
+                  <TamilTransliterationInput language={formData.billLanguage} type="text" placeholder="Native Place" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.customerSnapshot?.nativePlace || ''} onChange={e=>setFormData(prev=>({...prev, customerSnapshot:{...prev.customerSnapshot, nativePlace: e.target.value}}))} />
+                </div>
               </div>
 
               {/* Event Details */}

@@ -43,6 +43,8 @@ import EditBill from './pages/EditBill';
 import Customers from './pages/Customers';
 import Settings from './pages/Settings';
 import PrintBill from './pages/PrintBill';
+import SelectEvent from './pages/SelectEvent';
+import EventTypes from './pages/EventTypes';
 
 function App() {
   return (
@@ -57,9 +59,11 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="bills" element={<Bills />} />
+            <Route path="select-event" element={<SelectEvent />} />
             <Route path="create-bill" element={<CreateBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="customers" element={<Customers />} />
+            <Route path="event-types" element={<EventTypes />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/bills/:id/print" element={<PrintBill />} />

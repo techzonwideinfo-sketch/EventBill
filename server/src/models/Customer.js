@@ -5,7 +5,9 @@ const customerSchema = new mongoose.Schema({
   name: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String },
-  address: { type: String }
+  address: { type: String },
+  sonOf: { type: String },
+  nativePlace: { type: String }
 }, { timestamps: true });
 
 customerSchema.index({ userId: 1 });

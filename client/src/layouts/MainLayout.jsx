@@ -51,9 +51,10 @@ const MainLayout = () => {
 
   const navLinks = [
     { name: t('Dashboard'), path: '/' },
-    { name: t('Create MOI Bill'), path: '/create-bill' },
+    { name: t('Create MOI Bill'), path: '/select-event' },
     { name: t('Bill History'), path: '/bills' },
     { name: t('Customers'), path: '/customers' },
+    { name: t('Event Types'), path: '/event-types' },
     { name: t('Settings'), path: '/settings' }
   ];
 
@@ -176,9 +177,9 @@ const MainLayout = () => {
           </main>
           
         {/* Mobile Floating Action Button */}
-        {location.pathname !== '/create-bill' && (
+        {location.pathname !== '/create-bill' && location.pathname !== '/select-event' && (
           <Link 
-            to="/create-bill" 
+            to="/select-event" 
             className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-[#F2842F] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-orange-500 transition-transform active:scale-95 z-40"
             aria-label="Create New Bill"
           >
