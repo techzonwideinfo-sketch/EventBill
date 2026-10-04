@@ -3,25 +3,29 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+  const num = Number(amount);
+  if (isNaN(num)) return '₹0';
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
 };
 
 const formatDate = (dateString) => {
-  if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('en-IN');
+  if (!dateString) return '-';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('en-IN');
 };
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorInfo: null };
+    this.state = { hasError: false, errorInfo: null, errorObj: null };
   }
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, errorObj: error };
   }
   componentDidCatch(error, errorInfo) {
     console.error("Report ErrorBoundary caught an error", error, errorInfo);
-    this.setState({ errorInfo });
+    this.setState({ errorInfo, errorObj: error });
   }
   render() {
     if (this.state.hasError) {
@@ -29,7 +33,11 @@ class ErrorBoundary extends React.Component {
         <div style={{ padding: '20px', color: 'red', backgroundColor: '#fff', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
           <h2>Report Rendering Error</h2>
           <p>Something went wrong while displaying the report.</p>
-          <pre style={{ fontSize: '12px', background: '#f1f5f9', padding: '10px' }}>{this.state.errorInfo?.componentStack}</pre>
+          <pre style={{ fontSize: '12px', background: '#f1f5f9', padding: '10px', overflowX: 'auto' }}>
+            {this.state.errorObj?.toString()}
+            {'\n'}
+            {this.state.errorInfo?.componentStack}
+          </pre>
           <button onClick={() => window.close()} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
         </div>
       );
@@ -66,7 +74,7 @@ const EventBillHistoryReportContent = () => {
     let params = {};
     if (eventId) {
       params.eventId = eventId;
-      API.get(/event-types/ + eventId).then(res => {
+      API.get(`/event-types/` + eventId).then(res => {
         if (res.data?.data?.name) {
           setEventName(res.data.data.name);
         }
@@ -101,7 +109,17 @@ const EventBillHistoryReportContent = () => {
 
     API.get('/bills', { params })
       .then(res => {
-        setBills(res.data.data);
+        // Robust response parsing
+        const rawData = res.data?.data || res.data?.bills || res.data || [];
+        const finalBills = Array.isArray(rawData) ? rawData : (rawData.docs || []);
+        
+        if (!Array.isArray(finalBills)) {
+          console.error("API returned non-array data:", res.data);
+          setError("Invalid data format received from server.");
+          setBills([]);
+        } else {
+          setBills(finalBills);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -112,7 +130,8 @@ const EventBillHistoryReportContent = () => {
   }, [eventId, eventFilterFallback, statusFilter, dateFilter, customStart, customEnd]);
 
   useEffect(() => {
-    if (!loading && !error && bills.length > 0) {
+    // Only print when data is loaded, there is no error, and the array is truly present.
+    if (!loading && !error && Array.isArray(bills) && bills.length > 0) {
       setTimeout(() => {
         window.print();
       }, 800);
@@ -158,7 +177,9 @@ const EventBillHistoryReportContent = () => {
       <button onClick={() => window.location.reload()} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#253C6D', color: '#fff', border: 'none', borderRadius: '4px' }}>Retry</button>
     </div>
   );
-  if (bills.length === 0) return renderShell(
+  
+  const safeBills = Array.isArray(bills) ? bills : [];
+  if (safeBills.length === 0) return renderShell(
     <div style={{ padding: '20px', textAlign: 'center' }}>
       <h2>No Records Found</h2>
       <p>No bills match the selected criteria for this report.</p>
@@ -170,15 +191,18 @@ const EventBillHistoryReportContent = () => {
     dateStr = customStart + ' to ' + customEnd;
   }
 
-  // Calculate chunks
+  // Calculate chunks safely
   const pages = [];
-  for (let i = 0; i < bills.length; i += ROWS_PER_PAGE) {
-    pages.push(bills.slice(i, i + ROWS_PER_PAGE));
+  for (let i = 0; i < safeBills.length; i += ROWS_PER_PAGE) {
+    pages.push(safeBills.slice(i, i + ROWS_PER_PAGE));
   }
 
-  // Grand totals
-  const totalBills = bills.length;
-  const totalPaid = bills.reduce((sum, b) => sum + (b.totalPaid || 0), 0);
+  // Grand totals safely
+  const totalBills = safeBills.length;
+  const totalPaid = safeBills.reduce((sum, b) => {
+    const p = Number(b?.totalPaid);
+    return sum + (isNaN(p) ? 0 : p);
+  }, 0);
 
   return (
     <div>
@@ -234,7 +258,10 @@ const EventBillHistoryReportContent = () => {
         const isLastPage = pageNum === totalPages;
         
         const pageBillCount = pageBills.length;
-        const pagePaidTotal = pageBills.reduce((sum, b) => sum + (b.totalPaid || 0), 0);
+        const pagePaidTotal = pageBills.reduce((sum, b) => {
+          const p = Number(b?.totalPaid);
+          return sum + (isNaN(p) ? 0 : p);
+        }, 0);
         
         return (
           <div key={'page-' + pageNum} className="page-wrapper">
@@ -267,29 +294,34 @@ const EventBillHistoryReportContent = () => {
               <tbody>
                 {pageBills.map((b, index) => {
                   const globalIndex = (pageIndex * ROWS_PER_PAGE) + index + 1;
-                  const custName = b.customerSnapshot?.name || (b.customerId ? b.customerId.name : '-');
-                  const sonOf = b.customerSnapshot?.sonOf || '-';
-                  const nativePlace = b.customerSnapshot?.nativePlace || '-';
-                  const phone = b.customerSnapshot?.phone || (b.customerId ? b.customerId.phone : '-');
+                  
+                  // Safely handle potentially null/undefined objects
+                  const custSnap = b?.customerSnapshot || {};
+                  const custRef = b?.customerId || {};
+                  
+                  const custName = custSnap.name || custRef.name || '-';
+                  const sonOf = custSnap.sonOf || '-';
+                  const nativePlace = custSnap.nativePlace || '-';
+                  const phone = custSnap.phone || custRef.phone || '-';
                   
                   let statusClass = 'status-pending';
-                  if (b.paymentStatus === 'Paid') statusClass = 'status-paid';
-                  if (b.paymentStatus === 'Partially Paid') statusClass = 'status-partial';
+                  if (b?.paymentStatus === 'Paid') statusClass = 'status-paid';
+                  if (b?.paymentStatus === 'Partially Paid') statusClass = 'status-partial';
 
                   return (
-                    <tr key={b._id}>
+                    <tr key={b?._id || globalIndex}>
                       <td>{globalIndex}</td>
                       <td>{custName}</td>
                       <td>{sonOf}</td>
                       <td>{nativePlace}</td>
                       <td>{phone}</td>
                       <td>
-                        <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{b.eventType}</div>
-                        <div style={{ fontSize: '9px', color: '#555' }}>{formatDate(b.eventDate || b.createdAt)}</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{b?.eventType || '-'}</div>
+                        <div style={{ fontSize: '9px', color: '#555' }}>{formatDate(b?.eventDate || b?.createdAt)}</div>
                       </td>
-                      <td className="text-right" style={{ fontWeight: 'bold' }}>{formatCurrency(b.totalPaid)}</td>
+                      <td className="text-right" style={{ fontWeight: 'bold' }}>{formatCurrency(b?.totalPaid)}</td>
                       <td className="text-center">
-                        <span className={status-badge  + statusClass}>{b.paymentStatus || 'Pending'}</span>
+                        <span className={`status-badge ` + statusClass}>{b?.paymentStatus || 'Pending'}</span>
                       </td>
                     </tr>
                   );
