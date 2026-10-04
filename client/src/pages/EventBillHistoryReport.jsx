@@ -11,7 +11,34 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-IN');
 };
 
-const EventBillHistoryReport = () => {
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Report ErrorBoundary caught an error", error, errorInfo);
+    this.setState({ errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', color: 'red', backgroundColor: '#fff', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+          <h2>Report Rendering Error</h2>
+          <p>Something went wrong while displaying the report.</p>
+          <pre style={{ fontSize: '12px', background: '#f1f5f9', padding: '10px' }}>{this.state.errorInfo?.componentStack}</pre>
+          <button onClick={() => window.close()} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
+        </div>
+      );
+    }
+    return this.props.children; 
+  }
+}
+
+const EventBillHistoryReportContent = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,19 +125,46 @@ const EventBillHistoryReport = () => {
     window.close();
   };
 
-  if (loading) return <div style={{ padding: '20px', fontSize: '18px', color: '#000', backgroundColor: '#fff', minHeight: '100vh' }}>Preparing report, please wait...</div>;
-  if (error) return (
-    <div style={{ padding: '20px', color: 'red', backgroundColor: '#fff', minHeight: '100vh' }}>
-      <h2>Error Preparing Report</h2>
-      <p>{error}</p>
-      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
+  // Render the header/shell first so it's not totally blank during loading/errors
+  const renderShell = (content) => (
+    <div>
+      <style>
+        {`
+          body { font-family: Arial, sans-serif; background: white; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .report-container { width: 100%; max-width: 100%; padding: 20px; box-sizing: border-box; }
+          .report-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .report-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; }
+          .no-print { display: none !important; }
+          @media print {
+             .report-container { padding: 0; }
+          }
+        `}
+      </style>
+      <div className="no-print" style={{ background: '#f8f9fa', padding: '15px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0, color: '#253C6D' }}>Report Preview</h2>
+        <button onClick={handleClose} style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Close</button>
+      </div>
+      <div className="report-container">
+        <div className="report-header">
+          <h1 className="report-title">E-MOI Event Bill History Report</h1>
+        </div>
+        {content}
+      </div>
     </div>
   );
-  if (bills.length === 0) return (
-    <div style={{ padding: '20px', color: '#000', backgroundColor: '#fff', minHeight: '100vh' }}>
+
+  if (loading) return renderShell(<div style={{ padding: '20px', fontSize: '18px', textAlign: 'center' }}>Preparing report, please wait...</div>);
+  if (error) return renderShell(
+    <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
+      <h2>Error Preparing Report</h2>
+      <p>{error}</p>
+      <button onClick={() => window.location.reload()} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#253C6D', color: '#fff', border: 'none', borderRadius: '4px' }}>Retry</button>
+    </div>
+  );
+  if (bills.length === 0) return renderShell(
+    <div style={{ padding: '20px', textAlign: 'center' }}>
       <h2>No Records Found</h2>
       <p>No bills match the selected criteria for this report.</p>
-      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
     </div>
   );
 
@@ -247,5 +301,11 @@ const EventBillHistoryReport = () => {
     </div>
   );
 };
+
+const EventBillHistoryReport = () => (
+  <ErrorBoundary>
+    <EventBillHistoryReportContent />
+  </ErrorBoundary>
+);
 
 export default EventBillHistoryReport;
