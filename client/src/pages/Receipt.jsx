@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API from '../services/api';
 import { downloadBillPdf, getBillPdfBlob } from '../services/billService';
-import { generateHTML } from '../utils/billTemplate';
+import { printBill } from '../utils/printUtils';
 
 const Receipt = () => {
   const { id } = useParams();
@@ -31,18 +31,38 @@ const Receipt = () => {
     if (!bill) return;
     setIsSharing(true);
     
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     try {
+      const isTamil = bill.billLanguage && bill.billLanguage.includes('Tamil');
+      const safeCustomerName = bill.customerSnapshot?.name || 'Customer';
+      let eventName = '';
+      if (isTamil) {
+        eventName = bill.eventTypeNameTa || bill.eventTypeNameEn || (bill.eventType === 'Other' ? bill.otherEventType : bill.eventType);
+      } else {
+        eventName = bill.eventTypeNameEn || (bill.eventType === 'Other' ? bill.otherEventType : bill.eventType);
+      }
+      
+      const messageText = isTamil 
+        ? `வணக்கம் ${safeCustomerName},\n\nஉங்கள் பில் விவரங்கள்:\nநிகழ்வு: ${eventName}\nமொத்த தொகை: ₹${bill.totalAmount || 0}\nசெலுத்திய தொகை: ₹${bill.totalPaid || 0}\nபாக்கி: ₹${bill.balanceAmount || 0}\n\nநன்றி!`
+        : `Hello ${safeCustomerName},\n\nYour bill details:\nEvent: ${eventName}\nTotal Amount: ₹${bill.totalAmount || 0}\nAmount Paid: ₹${bill.totalPaid || 0}\nOutstanding Balance: ₹${bill.balanceAmount || 0}\n\nThank you!`;
+      
+      let phone = bill.customerSnapshot?.phone || (bill.customerId && bill.customerId.phone) || '';
+      if (phone) {
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.length === 10) phone = '91' + cleaned;
+        else phone = cleaned;
+      }
+      
+      // Generate PDF locally on the client (Bypasses Render server Puppeteer failure)
       const blob = await getBillPdfBlob(bill._id);
       const file = new File([blob], `EventBill-${bill.billNumber}.pdf`, { type: 'application/pdf' });
       
-      if (navigator.canShare && navigator.canShare({ files: [file] }) && isMobileDevice) {
+      // Attempt native OS share (Works on Mobile + modern Windows Edge/Chrome)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
             title: 'EventBill Receipt',
-            text: 'Please find your bill receipt attached.'
+            text: messageText
           });
           setIsSharing(false);
           return;
@@ -55,17 +75,15 @@ const Receipt = () => {
         }
       }
 
-      const res = await API.post(`/bills/${bill._id}/whatsapp`);
-      const { phone, text } = res.data;
-      
+      // Fallback for Desktop browsers / Electron without native share
       downloadBillPdf(bill._id, bill.billNumber);
       
       if (phone) {
-        alert("The PDF has been downloaded to your device. Please attach it manually in the WhatsApp chat.");
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+        alert("The PDF has been downloaded to your computer.\n\nWhatsApp Web does not support automatic PDF attachment via link. Please click the attachment icon in WhatsApp and select the downloaded PDF manually.");
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(messageText)}`;
         window.open(url, '_blank');
       } else {
-        alert("Customer mobile number is missing. The PDF has been downloaded. Please send it manually.");
+        alert("Customer mobile number is missing.\n\nThe PDF has been downloaded. Please send it manually.");
       }
     } catch (err) {
       console.error(err);
@@ -76,47 +94,7 @@ const Receipt = () => {
   };
 
   const handlePrint = async () => {
-    const width = localStorage.getItem('receiptWidth') || '80mm';
-    const html = generateHTML(bill, '', width);
-    const fullHtml = `
-      <html><head><style>
-        @page { size: ${width} auto; margin: 0; }
-        body { width: ${width}; margin: 0; padding: 4mm; box-sizing: border-box; background: white; }
-        .no-print { display: none !important; }
-      </style></head><body>
-      <div class="print-receipt">
-      ${html}
-      </div>
-      </body></html>
-    `;
-
-    if (window.electronAPI) {
-      await window.electronAPI.printHtml(fullHtml);
-    } else {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(fullHtml);
-      doc.close();
-      
-      iframe.contentWindow.focus();
-      setTimeout(() => {
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-             document.body.removeChild(iframe);
-          }
-        }, 1000);
-      }, 500);
-    }
+    await printBill(bill);
   };
 
   const formatCurrency = (amount) => {
@@ -195,7 +173,7 @@ const Receipt = () => {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-          <button onClick={() => window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${bill._id}/print` : `/bills/${bill._id}/print`, '_blank')} className="px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex justify-center items-center gap-2">
+          <button onClick={handlePrint} className="px-4 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex justify-center items-center gap-2">
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
             Print Receipt
           </button>

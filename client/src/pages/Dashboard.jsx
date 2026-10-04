@@ -3,6 +3,7 @@ import API from '../services/api';
 import { I18nContext } from '../layouts/MainLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import { downloadBillPdf } from '../services/billService';
+import { printBill } from '../utils/printUtils';
 
 const DashboardSkeleton = () => (
   <div className="space-y-6 pb-12 animate-pulse">
@@ -178,7 +179,7 @@ const Dashboard = () => {
                           <button onClick={() => downloadBillPdf(b._id, b.billNumber)} className="p-1.5 text-gray-400 hover:text-[#F2842F] bg-gray-50 hover:bg-gray-200 rounded transition-colors" title="Download PDF">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                           </button>
-                          <button onClick={() => window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${b._id}/print` : `/bills/${b._id}/print`, '_blank')} className="p-1.5 text-gray-400 hover:text-purple-600 bg-gray-50 hover:bg-gray-200 rounded transition-colors" title="Print">
+                          <button onClick={() => printBill(b)} className="p-1.5 text-gray-400 hover:text-purple-600 bg-gray-50 hover:bg-gray-200 rounded transition-colors" title="Print">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                           </button>
                         </div>
@@ -235,7 +236,7 @@ const Dashboard = () => {
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                       PDF
                     </button>
-                    <button onClick={() => window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${b._id}/print` : `/bills/${b._id}/print`, '_blank')} className="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">
+                    <button onClick={() => printBill(b)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-lg text-xs font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                       Print
                     </button>

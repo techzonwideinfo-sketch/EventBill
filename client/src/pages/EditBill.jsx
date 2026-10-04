@@ -6,6 +6,7 @@ import { downloadBillPdf } from '../services/billService';
 import { generateHTML } from '../utils/billTemplate';
 import TamilTransliterationInput from '../components/TamilTransliterationInput';
 import { transliterateText } from '../utils/tamilTransliteration';
+import { printBill } from '../utils/printUtils';
 
 const EditBillSkeleton = () => (
   <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-pulse">
@@ -105,14 +106,17 @@ const EditBill = () => {
   }, [formData?.otherEventType, formData?.eventType]);
 
   const handlePrint = async () => {
-    if (window.electronAPI && window.electronAPI.printHtml) {
-      const printRes = await window.electronAPI.printHtml(previewHtml);
-      if (!printRes.success) {
-        alert("Print failed: " + printRes.reason);
-      }
-    } else {
-      window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${id}/print` : `/bills/${id}/print`, '_blank');
-    }
+    if (!formData) return;
+    const previewBill = {
+      ...formData,
+      subtotal: subtotal,
+      balanceAmount: balance,
+      totalAmount: subtotal,
+      totalPaid: Number(formData.advancePaid || 0),
+      items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
+      paymentStatus: balance <= 0 ? 'Paid' : (formData.advancePaid > 0 ? 'Partially Paid' : 'Pending')
+    };
+    await printBill(previewBill);
   };
 
   const handleSubmit = async (e) => {
