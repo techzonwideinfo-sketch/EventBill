@@ -46,6 +46,7 @@ import PrintBill from './pages/PrintBill';
 import SelectEvent from './pages/SelectEvent';
 import EventTypes from './pages/EventTypes';
 import Receipt from './pages/Receipt';
+import EventBillHistoryReport from './pages/EventBillHistoryReport';
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/bills/:id/print" element={<PrintBill />} />
+          <Route path="/report/event-history" element={<EventBillHistoryReport />} />
         </Routes>
       </Router>
     </AuthProvider>

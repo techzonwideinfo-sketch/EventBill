@@ -4,9 +4,6 @@ import { I18nContext } from '../layouts/MainLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import { downloadBillPdf } from '../services/billService';
 import WhatsAppModal from '../components/WhatsAppModal';
-import { printA4Report } from '../utils/printUtils';
-import { renderToString } from 'react-dom/server';
-import EventBillHistoryReport from '../components/EventBillHistoryReport';
 
 const Bills = () => {
   const [bills, setBills] = useState([]);
@@ -20,7 +17,6 @@ const Bills = () => {
   const [eventTypesList, setEventTypesList] = useState([]);
   const [shareBill, setShareBill] = useState(null);
   const [printingId, setPrintingId] = useState(null);
-  const [printingReport, setPrintingReport] = useState(false);
   
   const { t } = useContext(I18nContext);
   const navigate = useNavigate();
@@ -123,17 +119,25 @@ const Bills = () => {
     return !searchQuery || custName.includes(query) || billNo.includes(query);
   });
 
-  const handlePrintReport = async () => {
-    setPrintingReport(true);
-    let dateStr = dateFilter;
-    if (dateFilter === 'Custom') {
-      dateStr = `${customStart} to ${customEnd}`;
+  const handlePrintReport = () => {
+    if (!eventFilter) return;
+
+    const params = new URLSearchParams();
+    params.append('event', eventFilter);
+    if (statusFilter) params.append('status', statusFilter);
+    if (dateFilter) params.append('dateFilter', dateFilter);
+    if (customStart) params.append('customStart', customStart);
+    if (customEnd) params.append('customEnd', customEnd);
+
+    let printUrl = `/report/event-history?${params.toString()}`;
+    if (window.location.protocol === 'app:') {
+      printUrl = `app://index.html${printUrl}`;
     }
-    const htmlString = renderToString(
-      <EventBillHistoryReport bills={filteredBills} eventName={eventFilter} dateRangeStr={dateStr} />
-    );
-    await printA4Report(htmlString);
-    setPrintingReport(false);
+
+    const newWin = window.open(printUrl, '_blank', 'width=1000,height=900,left=100,top=100');
+    if (!newWin) {
+      alert("Popup blocked! Please allow popups to print the report.");
+    }
   };
 
   return (
@@ -148,15 +152,11 @@ const Bills = () => {
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
             onClick={handlePrintReport}
-            disabled={!eventFilter || printingReport}
+            disabled={!eventFilter}
             className="bg-white border border-[#455B8A] text-[#455B8A] px-4 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             title={!eventFilter ? "Please select an event first" : "Print Report"}
           >
-            {printingReport ? (
-              <svg className="w-4 h-4 animate-spin text-[#455B8A]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-            )}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
             Print Event Report (A4)
           </button>
           <Link to="/select-event" className="bg-[#F2842F] text-white px-5 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors text-center whitespace-nowrap">
