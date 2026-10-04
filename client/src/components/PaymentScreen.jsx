@@ -60,8 +60,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
           setPollingStatus(false);
           // Refresh bill
           const billRes = await API.get(`/bills/${bill._id}`);
-          setUpdatedBill(billRes.data.data);
-          setSuccess(true);
+          onComplete(billRes.data.data);
         }
       } catch (err) {
         console.error('Polling error', err);
@@ -96,9 +95,8 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
         method: paymentMethod,
         reference: reference
       });
-      setUpdatedBill(res.data.data.bill);
-      setSuccess(true);
       setLoading(false);
+      onComplete(res.data.data.bill);
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Error recording payment');
@@ -107,63 +105,8 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   };
 
   const handleSkipPayment = () => {
-    onComplete(updatedBill);
+    onComplete(bill);
   };
-
-  const handlePrint = async () => {
-    let printUrl = `/bills/${updatedBill._id}/print`;
-    if (window.location.protocol === 'app:') {
-      printUrl = `app://index.html/bills/${updatedBill._id}/print`;
-    }
-    window.open(printUrl, '_blank', 'width=800,height=900,left=200,top=100');
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
-  };
-
-  if (success) {
-    return (
-      <div className="fixed inset-0 bg-white z-50 overflow-y-auto flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6 max-w-lg mx-auto w-full">
-          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-2">
-            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-          </div>
-          <h2 className="text-3xl font-bold text-[#253C6D] text-center">Payment Verified!</h2>
-          <p className="text-[#455B8A] text-lg text-center">Payment successfully applied to bill.</p>
-          
-          <div className="w-full bg-gray-50 p-5 rounded-xl border border-gray-200 text-sm mb-6 space-y-3">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Total Amount</span>
-              <span className="font-bold text-[#253C6D]">{formatCurrency(updatedBill.totalAmount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Total Paid</span>
-              <span className="font-bold text-green-600">{formatCurrency(updatedBill.totalPaid)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
-              <span className="text-gray-700 font-bold">Outstanding Balance</span>
-              <span className="font-bold text-[#F2842F]">{formatCurrency(updatedBill.balanceAmount)}</span>
-            </div>
-          </div>
-          
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            <button onClick={handlePrint} className="w-full px-4 py-3.5 bg-white border-2 border-[#455B8A] text-[#455B8A] rounded-xl font-bold hover:bg-blue-50 transition-colors flex justify-center items-center gap-2 text-lg">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              Print Receipt
-            </button>
-            <button onClick={() => downloadBillPdf(updatedBill._id, updatedBill.billNumber)} className="w-full px-4 py-3.5 bg-white border-2 border-[#F2842F] text-[#F2842F] rounded-xl font-bold hover:bg-orange-50 transition-colors flex justify-center items-center gap-2 text-lg">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              PDF
-            </button>
-            <button onClick={() => onComplete(updatedBill)} className="w-full px-4 py-3.5 bg-[#253C6D] text-white rounded-xl font-bold hover:bg-[#30497D] transition-colors sm:col-span-2 text-lg mt-2 shadow-md">
-              Finish
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto flex flex-col">
@@ -180,11 +123,11 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex justify-between items-center">
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Bill Amount</p>
-            <p className="text-3xl font-bold text-[#253C6D]">{formatCurrency(bill.totalAmount)}</p>
+            <p className="text-3xl font-bold text-[#253C6D]">₹{bill.totalAmount.toLocaleString('en-IN')}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">Outstanding Balance</p>
-            <p className="font-bold text-3xl text-[#F2842F]">{formatCurrency(bill.balanceAmount)}</p>
+            <p className="font-bold text-3xl text-[#F2842F]">₹{bill.balanceAmount.toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -228,7 +171,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
                   <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
                     <img src={settings.staticQrImage} alt="UPI QR" className="w-48 h-48 object-contain" />
                   </div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay <span className="text-[#253C6D] text-lg">{formatCurrency(amountReceived)}</span></p>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay <span className="text-[#253C6D] text-lg">₹{Number(amountReceived).toLocaleString('en-IN')}</span></p>
                   {settings.upiId && <p className="text-xs text-gray-400 font-mono bg-gray-100 px-3 py-1 rounded-full">{settings.upiId}</p>}
                 </>
               ) : (
@@ -249,7 +192,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
                    <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
                      <img src={dynamicQrData.qrImage} alt="Dynamic UPI QR" className="w-48 h-48 object-contain" />
                    </div>
-                   <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay exact amount: <span className="text-[#253C6D] text-lg">{formatCurrency(dynamicQrData.amount)}</span></p>
+                   <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay exact amount: <span className="text-[#253C6D] text-lg">₹{Number(dynamicQrData.amount).toLocaleString('en-IN')}</span></p>
                    {pollingStatus && (
                      <div className="flex items-center gap-2 text-green-600 mt-2 animate-pulse">
                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -284,7 +227,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
             {Number(amountReceived) > bill.balanceAmount && (
               <div className="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 flex justify-between items-center">
                 <span className="text-sm font-bold text-green-700">Change to Return:</span>
-                <span className="text-xl font-bold text-green-700">{formatCurrency(Number(amountReceived) - bill.balanceAmount)}</span>
+                <span className="text-xl font-bold text-green-700">₹{(Number(amountReceived) - bill.balanceAmount).toLocaleString('en-IN')}</span>
               </div>
             )}
             

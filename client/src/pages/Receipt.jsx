@@ -154,8 +154,8 @@ const Receipt = () => {
           <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
         </div>
         
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Bill Saved Successfully</h2>
-        <p className="text-gray-500 text-sm mb-8">The bill has been recorded and saved.</p>
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Receipt Generated</h2>
+        <p className="text-gray-500 text-sm mb-8">Review and print or share your bill.</p>
         
         <div className="bg-gray-50 rounded-xl border border-gray-100 p-5 mb-8 text-left space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-gray-200/60">
@@ -177,6 +177,14 @@ const Receipt = () => {
           <div className="flex justify-between items-center">
             <span className="text-gray-500 text-sm font-medium uppercase tracking-wider">Amount Paid</span>
             <span className="font-bold text-green-600 text-lg">{formatCurrency(bill.totalPaid)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm font-medium uppercase tracking-wider">Payment Method</span>
+            <span className="font-bold text-gray-900 text-sm">{bill.paymentMethod || 'Pending / Skip'}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm font-medium uppercase tracking-wider">Status</span>
+            <span className={`font-bold text-sm ${bill.paymentStatus === 'Paid' ? 'text-green-600' : 'text-orange-500'}`}>{bill.paymentStatus}</span>
           </div>
           <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
             <span className="text-gray-600 text-sm font-bold uppercase tracking-wider">Outstanding Balance</span>

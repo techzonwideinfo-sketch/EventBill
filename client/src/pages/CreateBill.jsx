@@ -14,7 +14,7 @@ const CreateBill = () => {
   const navigate = useNavigate();
   
   const [successBill, setSuccessBill] = useState(null);
-  const [checkoutBill, setCheckoutBill] = useState(null);
+  const [createdBill, setCreatedBill] = useState(null);
 
   const [formData, setFormData] = useState({
     customerSnapshot: { name: '', phone: '', address: '', sonOf: '', nativePlace: '' },
@@ -137,7 +137,7 @@ const CreateBill = () => {
       };
       const res = await API.post('/bills', dataToSubmit);
       setLoading(false);
-      navigate(`/bills/${res.data.data._id}/receipt`);
+      setCreatedBill(res.data.data);
     } catch (err) {
       setLoading(false);
       alert(err.response?.data?.message || err.message || 'Error creating bill');
@@ -179,6 +179,16 @@ const CreateBill = () => {
           Return to Event Selection
         </Link>
       </div>
+    );
+  }
+
+  if (createdBill) {
+    return (
+      <PaymentScreen 
+        bill={createdBill} 
+        onComplete={(updatedBill) => navigate(`/bills/${updatedBill._id}/receipt`)} 
+        onCancel={() => navigate(`/bills/${createdBill._id}/receipt`)} 
+      />
     );
   }
 

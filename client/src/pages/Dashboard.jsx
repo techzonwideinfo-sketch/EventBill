@@ -81,23 +81,43 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Stats Cards - Grid: 1 col mobile, 2 cols tablet, 4 cols desktop */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#253C6D] flex flex-col justify-between">
-              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">{t('Total Bills')}</p>
-              <h3 className="text-2xl sm:text-3xl font-bold text-[#253C6D] mt-2">{stats.totalBills}</h3>
+          {/* Stats Cards - Collections */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-5">
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-green-600 flex flex-col justify-between">
+              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">Total Collection</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-green-700 mt-2">{formatCurrency(stats.totalCollection)}</h3>
             </div>
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#30497D] flex flex-col justify-between">
-              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">{t('Total Amount')}</p>
-              <h3 className="text-2xl sm:text-3xl font-bold text-[#253C6D] mt-2">{formatCurrency(stats.totalAmount)}</h3>
-            </div>
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-green-500 flex flex-col justify-between">
-              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">{t('Total Paid')}</p>
-              <h3 className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">{formatCurrency(stats.totalPaid)}</h3>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-green-400 flex flex-col justify-between">
+              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">Cash Collection</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-green-600 mt-2">{formatCurrency(stats.cashCollection)}</h3>
             </div>
             <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-[#F2842F] flex flex-col justify-between">
+              <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">QR / UPI</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#F2842F] mt-2">{formatCurrency(stats.qrCollection)}</h3>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500 flex flex-col justify-between">
               <p className="text-[#455B8A] text-xs uppercase tracking-wider font-bold">{t('Pending Amount')}</p>
-              <h3 className="text-2xl sm:text-3xl font-bold text-[#F2842F] mt-2">{formatCurrency(stats.totalPending)}</h3>
+              <h3 className="text-2xl sm:text-3xl font-bold text-red-600 mt-2">{formatCurrency(stats.totalPending)}</h3>
+            </div>
+          </div>
+
+          {/* Stats Cards - Bills */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 mb-8">
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <p className="text-gray-500 text-xs uppercase font-bold mb-1">Total Bills</p>
+              <h3 className="text-xl font-bold text-[#253C6D]">{stats.totalBills}</h3>
+            </div>
+            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+              <p className="text-green-600 text-xs uppercase font-bold mb-1">Fully Paid</p>
+              <h3 className="text-xl font-bold text-green-700">{stats.fullyPaid}</h3>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+              <p className="text-blue-600 text-xs uppercase font-bold mb-1">Partial</p>
+              <h3 className="text-xl font-bold text-blue-700">{stats.partiallyPaid}</h3>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+              <p className="text-orange-600 text-xs uppercase font-bold mb-1">Pending</p>
+              <h3 className="text-xl font-bold text-orange-700">{stats.pendingBills}</h3>
             </div>
           </div>
           
