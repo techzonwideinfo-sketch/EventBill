@@ -2,7 +2,7 @@ import express from 'express';
 import { register, login, getMe, updateProfile, updatePassword, forgotPassword, resetPassword } from '../controllers/authController.js';
 import { getCustomers, getCustomer, createCustomer, updateCustomer, deleteCustomer } from '../controllers/customerController.js';
 import { getBills, getBill, createBill, updateBill, deleteBill, useAsNew } from '../controllers/billController.js';
-import { getEventTypes, createEventType, updateEventType, deleteEventType } from '../controllers/eventTypeController.js';
+import { getEventTypes, getEventType, createEventType, updateEventType, deleteEventType } from '../controllers/eventTypeController.js';
 import { getServices, createService, updateService, deleteService } from '../controllers/serviceController.js';
 import { getPdf, getPublicBill } from '../controllers/pdfController.js';
 import { shareBillViaWhatsApp } from '../controllers/whatsappController.js';
@@ -25,6 +25,7 @@ router.put('/auth/profile', protect, updateProfile);
 router.put('/auth/password', protect, updatePassword);
 
 router.get('/event-types', protect, getEventTypes);
+router.get('/event-types/:id', protect, getEventType);
 router.post('/event-types', protect, createEventType);
 router.put('/event-types/:id', protect, updateEventType);
 router.delete('/event-types/:id', protect, deleteEventType);

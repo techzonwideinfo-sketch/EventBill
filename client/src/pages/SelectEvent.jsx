@@ -23,7 +23,7 @@ const SelectEvent = () => {
   }, []);
 
   const handleSelectEvent = (event) => {
-    navigate('/create-bill', { state: { selectedEvent: event } });
+    navigate(`/create-bill/${event._id}`);
   };
 
   if (loading) {

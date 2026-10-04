@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import API from '../services/api';
 import { I18nContext } from '../layouts/MainLayout';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { generateHTML } from '../utils/billTemplate';
 import { downloadBillPdf } from '../services/billService';
 import WhatsAppModal from '../components/WhatsAppModal';
@@ -31,7 +31,10 @@ const CreateBill = () => {
     notes: ''
   });
   
+  const { eventId } = useParams();
   const [loading, setLoading] = useState(false);
+  const [isLoadingEvent, setIsLoadingEvent] = useState(true);
+  const [eventError, setEventError] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [customerMode, setCustomerMode] = useState('new');
   const [previewHtml, setPreviewHtml] = useState('');
@@ -59,10 +62,32 @@ const CreateBill = () => {
   const balance = subtotal - Number(formData.advancePaid);
 
   useEffect(() => {
-    if (!location.state?.selectedEvent) {
+    if (!eventId) {
       navigate('/select-event');
+      return;
     }
-  }, [location, navigate]);
+    API.get(`/event-types/${eventId}`)
+      .then(res => {
+        const event = res.data.data;
+        if (!event.isActive) {
+          setEventError("This event is not active and cannot be used for new bills.");
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            eventType: event.name,
+            eventTypeNameEn: event.name,
+            eventTypeNameTa: event.tamilName || event.name,
+            venue: event.defaultVenue || ''
+          }));
+        }
+        setIsLoadingEvent(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setEventError("Failed to load event details. Please select an event again.");
+        setIsLoadingEvent(false);
+      });
+  }, [eventId, navigate]);
 
   useEffect(() => {
     const previewBill = {
@@ -106,9 +131,9 @@ const CreateBill = () => {
     setSuccessBill(null);
     setFormData({
       customerSnapshot: { name: '', phone: '', address: '', sonOf: '', nativePlace: '' },
-      eventType: 'E-MOI',
-      eventTypeNameEn: 'E-MOI',
-      eventTypeNameTa: 'E-MOI',
+      eventType: formData.eventType,
+      eventTypeNameEn: formData.eventTypeNameEn,
+      eventTypeNameTa: formData.eventTypeNameTa,
       otherEventType: '',
       otherEventTypeTa: '',
       eventDate: new Date().toISOString().slice(0,10),
@@ -190,6 +215,25 @@ const CreateBill = () => {
             bill={successBill} 
           />
         )}
+      </div>
+    );
+  }
+
+  if (isLoadingEvent) {
+    return <div className="p-8 text-center text-[#455B8A] font-medium">Loading event details...</div>;
+  }
+
+  if (eventError) {
+    return (
+      <div className="bg-white p-12 rounded-xl shadow-sm text-center border border-red-100 mt-8 max-w-2xl mx-auto">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        </div>
+        <h2 className="text-xl text-[#253C6D] font-bold mb-2">Error Loading Event</h2>
+        <p className="text-[#455B8A] mb-6">{eventError}</p>
+        <Link to="/select-event" className="inline-block bg-[#253C6D] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#30497D] transition-colors">
+          Return to Event Selection
+        </Link>
       </div>
     );
   }

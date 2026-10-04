@@ -60,7 +60,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="bills" element={<Bills />} />
             <Route path="select-event" element={<SelectEvent />} />
-            <Route path="create-bill" element={<CreateBill />} />
+            <Route path="create-bill/:eventId" element={<CreateBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="customers" element={<Customers />} />
             <Route path="event-types" element={<EventTypes />} />

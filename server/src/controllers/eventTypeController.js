@@ -10,6 +10,18 @@ export const getEventTypes = async (req, res) => {
   }
 };
 
+export const getEventType = async (req, res) => {
+  try {
+    const event = await EventType.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event type not found' });
+    }
+    res.json({ success: true, data: event });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error retrieving event type' });
+  }
+};
+
 export const createEventType = async (req, res) => {
   try {
     const { name, tamilName, logo, description, defaultVenue } = req.body;
