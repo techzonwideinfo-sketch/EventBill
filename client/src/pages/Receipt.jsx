@@ -76,23 +76,46 @@ const Receipt = () => {
   };
 
   const handlePrint = async () => {
+    const width = localStorage.getItem('receiptWidth') || '80mm';
+    const html = generateHTML(bill, '', width);
+    const fullHtml = `
+      <html><head><style>
+        @page { size: ${width} auto; margin: 0; }
+        body { width: ${width}; margin: 0; padding: 4mm; box-sizing: border-box; background: white; }
+        .no-print { display: none !important; }
+      </style></head><body>
+      <div class="print-receipt">
+      ${html}
+      </div>
+      </body></html>
+    `;
+
     if (window.electronAPI) {
-      const width = localStorage.getItem('receiptWidth') || '80mm';
-      const html = generateHTML(bill, '', width);
-      const fullHtml = `
-        <html><head><style>
-          @page { size: ${width} auto; margin: 0; }
-          body { width: ${width}; margin: 0; padding: 4mm; box-sizing: border-box; background: white; }
-          .no-print { display: none !important; }
-        </style></head><body>
-        <div class="print-receipt">
-        ${html}
-        </div>
-        </body></html>
-      `;
       await window.electronAPI.printHtml(fullHtml);
     } else {
-      window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${bill._id}/print` : `/bills/${bill._id}/print`, '_blank');
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(fullHtml);
+      doc.close();
+      
+      iframe.contentWindow.focus();
+      setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+             document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 500);
     }
   };
 

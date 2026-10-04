@@ -1,24 +1,57 @@
 import API from './api';
+import { generateHTML } from '../utils/billTemplate';
+import html2pdf from 'html2pdf.js';
 
-export const getBillPdfBlob = async (billId) => {
-  const response = await API.get(`/bills/${billId}/pdf`, {
-    responseType: 'blob'
-  });
-  return new Blob([response.data], { type: 'application/pdf' });
+const generateFrontendPdf = async (billId) => {
+  const res = await API.get(`/bills/${billId}`);
+  const bill = res.data.data;
+  
+  const width = localStorage.getItem('receiptWidth') || '80mm';
+  const html = generateHTML(bill, '', width);
+  
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  
+  // Set explicit width for html2canvas to render correctly
+  container.style.width = width === '80mm' ? '302px' : '794px'; 
+  container.style.background = 'white';
+  container.style.padding = '0';
+  container.style.margin = '0';
+  container.style.position = 'absolute';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  
+  document.body.appendChild(container);
+  
+  const opt = {
+    margin:       0,
+    filename:     `EventBill-${bill.billNumber}.pdf`,
+    image:        { type: 'jpeg', quality: 1 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: width === '80mm' ? [80, 200] : 'a4', orientation: 'portrait' }
+  };
+  
+  try {
+    const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+    return { blob: pdfBlob, billNumber: bill.billNumber };
+  } finally {
+    document.body.removeChild(container);
+  }
 };
 
-export const downloadBillPdf = async (billId, billNumber = 'Bill') => {
+export const getBillPdfBlob = async (billId) => {
+  const { blob } = await generateFrontendPdf(billId);
+  return blob;
+};
+
+export const downloadBillPdf = async (billId, fallbackBillNumber = 'Bill') => {
   try {
-    const response = await API.get(`/bills/${billId}/pdf`, {
-      responseType: 'blob'
-    });
-    
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const { blob, billNumber } = await generateFrontendPdf(billId);
     const url = window.URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `EventBill-${billNumber}.pdf`;
+    link.download = `EventBill-${billNumber || fallbackBillNumber}.pdf`;
     
     document.body.appendChild(link);
     link.click();
@@ -26,45 +59,20 @@ export const downloadBillPdf = async (billId, billNumber = 'Bill') => {
     link.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    if (error.response && error.response.data instanceof Blob) {
-      const text = await error.response.data.text();
-      try {
-        const json = JSON.parse(text);
-        alert(json.message || 'Unable to generate PDF.');
-      } catch {
-        alert('Unable to generate PDF. Please try again.');
-      }
-    } else {
-      alert('Network error. Unable to generate PDF.');
-    }
+    console.error("PDF Generation error:", error);
+    alert('Unable to generate PDF. Please try again.');
   }
 };
 
 export const viewBillPdf = async (billId) => {
   try {
-    const response = await API.get(`/bills/${billId}/pdf`, {
-      responseType: 'blob'
-    });
-    
-    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const { blob } = await generateFrontendPdf(billId);
     const url = window.URL.createObjectURL(blob);
     
     window.open(url, '_blank');
-    
-    // Optional: revoke object URL after some time to free memory, 
-    // but doing it immediately closes it in some browsers before the new tab renders.
     setTimeout(() => window.URL.revokeObjectURL(url), 10000);
   } catch (error) {
-    if (error.response && error.response.data instanceof Blob) {
-      const text = await error.response.data.text();
-      try {
-        const json = JSON.parse(text);
-        alert(json.message || 'Unable to generate PDF.');
-      } catch {
-        alert('Unable to generate PDF. Please try again.');
-      }
-    } else {
-      alert('Network error. Unable to generate PDF.');
-    }
+    console.error("PDF Generation error:", error);
+    alert('Unable to generate PDF. Please try again.');
   }
 };
