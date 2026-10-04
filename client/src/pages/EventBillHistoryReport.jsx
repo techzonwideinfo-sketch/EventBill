@@ -38,12 +38,13 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+const ROWS_PER_PAGE = 20;
+
 const EventBillHistoryReportContent = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
-  const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(location.search);
   const eventId = queryParams.get('eventId');
@@ -65,8 +66,7 @@ const EventBillHistoryReportContent = () => {
     let params = {};
     if (eventId) {
       params.eventId = eventId;
-      // Fetch the actual event name for the header
-      API.get(`/event-types/${eventId}`).then(res => {
+      API.get(/event-types/ + eventId).then(res => {
         if (res.data?.data?.name) {
           setEventName(res.data.data.name);
         }
@@ -112,9 +112,7 @@ const EventBillHistoryReportContent = () => {
   }, [eventId, eventFilterFallback, statusFilter, dateFilter, customStart, customEnd]);
 
   useEffect(() => {
-    // Only print once loading is complete and no errors occurred
     if (!loading && !error && bills.length > 0) {
-      // Small timeout to ensure rendering/fonts are fully painted
       setTimeout(() => {
         window.print();
       }, 800);
@@ -125,7 +123,6 @@ const EventBillHistoryReportContent = () => {
     window.close();
   };
 
-  // Render the header/shell first so it's not totally blank during loading/errors
   const renderShell = (content) => (
     <div>
       <style>
@@ -170,17 +167,18 @@ const EventBillHistoryReportContent = () => {
 
   let dateStr = dateFilter || 'All Time';
   if (dateFilter === 'Custom') {
-    dateStr = `${customStart} to ${customEnd}`;
+    dateStr = customStart + ' to ' + customEnd;
   }
 
-  const totalBills = bills.length;
-  const totalAmount = bills.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-  const totalPaid = bills.reduce((sum, b) => sum + (b.totalPaid || 0), 0);
-  const totalBalance = bills.reduce((sum, b) => sum + (b.balanceAmount || 0), 0);
+  // Calculate chunks
+  const pages = [];
+  for (let i = 0; i < bills.length; i += ROWS_PER_PAGE) {
+    pages.push(bills.slice(i, i + ROWS_PER_PAGE));
+  }
 
-  const fullyPaidCount = bills.filter(b => b.paymentStatus === 'Paid').length;
-  const partialCount = bills.filter(b => b.paymentStatus === 'Partially Paid').length;
-  const pendingCount = bills.filter(b => b.paymentStatus === 'Pending' || !b.paymentStatus).length;
+  // Grand totals
+  const totalBills = bills.length;
+  const totalPaid = bills.reduce((sum, b) => sum + (b.totalPaid || 0), 0);
 
   return (
     <div>
@@ -188,34 +186,41 @@ const EventBillHistoryReportContent = () => {
         {`
           @page { size: A4 landscape; margin: 10mm; }
           body { font-family: Arial, sans-serif; background: white; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .report-container { width: 100%; max-width: 100%; padding: 20px; box-sizing: border-box; }
-          .report-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .report-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; }
+          .page-wrapper { width: 100%; box-sizing: border-box; page-break-after: always; padding: 10mm 15mm; min-height: 100vh; display: flex; flex-direction: column; }
+          @media print {
+            .page-wrapper { min-height: auto; height: 100%; padding: 0; }
+          }
+          .page-wrapper:last-child { page-break-after: auto; }
+          .report-header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; flex-shrink: 0; }
+          .report-title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; }
           .report-meta { display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px; }
-          .report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; page-break-inside: auto; }
-          .report-table thead { display: table-header-group; }
-          .report-table tr { page-break-inside: avoid; page-break-after: auto; }
+          .report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
           .report-table th, .report-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
           .report-table th { background-color: #f3f4f6; font-weight: bold; text-transform: uppercase; }
           .text-right { text-align: right !important; }
           .text-center { text-align: center !important; }
-          .report-summary { margin-top: 30px; page-break-inside: avoid; border: 2px solid #000; padding: 15px; display: flex; justify-content: space-between; }
-          .summary-col { width: 48%; }
-          .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-          .summary-row.total { font-weight: bold; font-size: 16px; border-top: 1px solid #000; padding-top: 8px; margin-top: 8px; }
+          
+          .spacer { flex-grow: 1; }
+          
+          .page-summary { border: 1px solid #000; padding: 10px; display: flex; justify-content: space-around; background-color: #f8f9fa; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+          .grand-summary { border: 2px solid #000; padding: 12px; display: flex; justify-content: space-around; background-color: #e2e8f0; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+          
           .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
           .status-paid { background-color: #dcfce7; color: #166534; }
           .status-partial { background-color: #dbeafe; color: #1e40af; }
           .status-pending { background-color: #ffedd5; color: #9a3412; }
+          .page-footer { text-align: right; font-size: 10px; color: #555; border-top: 1px solid #ddd; padding-top: 5px; }
+          
           .no-print { display: none !important; }
-          @media print {
-             .report-container { padding: 0; }
+          @media screen {
+            .page-wrapper { border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 20px auto; max-width: 297mm; background: white; }
+            body { background: #f0f2f5; }
           }
         `}
       </style>
       
       {/* Action Bar (hidden when printing) */}
-      <div className="no-print" style={{ background: '#f8f9fa', padding: '15px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="no-print" style={{ background: '#f8f9fa', padding: '15px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100 }}>
         <h2 style={{ margin: 0, color: '#253C6D' }}>Report Preview</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={handleClose} style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Close</button>
@@ -223,81 +228,96 @@ const EventBillHistoryReportContent = () => {
         </div>
       </div>
 
-      <div className="report-container">
-        <div className="report-header">
-          <h1 className="report-title">E-MOI Event Bill History Report</h1>
-          <div className="report-meta">
-            <div>
-              <strong>Event:</strong> {eventName || 'All Events'} <br/>
-              <strong>Date Range:</strong> {dateStr}
+      {pages.map((pageBills, pageIndex) => {
+        const pageNum = pageIndex + 1;
+        const totalPages = pages.length;
+        const isLastPage = pageNum === totalPages;
+        
+        const pageBillCount = pageBills.length;
+        const pagePaidTotal = pageBills.reduce((sum, b) => sum + (b.totalPaid || 0), 0);
+        
+        return (
+          <div key={'page-' + pageNum} className="page-wrapper">
+            <div className="report-header">
+              <h1 className="report-title">E-MOI Event Bill History Report</h1>
+              <div className="report-meta">
+                <div>
+                  <strong>Event:</strong> {eventName || 'All Events'} <br/>
+                  <strong>Date Range:</strong> {dateStr}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <strong>Generated:</strong> {new Date().toLocaleString('en-IN')} <br/>
+                </div>
+              </div>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <strong>Generated:</strong> {new Date().toLocaleString('en-IN')} <br/>
-              <strong>Total Bills:</strong> {totalBills}
-            </div>
-          </div>
-        </div>
 
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>No.</th>
-              <th>Customer Name</th>
-              <th>S/O Name</th>
-              <th>Native Place</th>
-              <th>Phone</th>
-              <th className="text-right">Total</th>
-              <th className="text-right">Paid</th>
-              <th className="text-right">Balance</th>
-              <th className="text-center">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bills.map((b, index) => {
-              const custName = b.customerSnapshot?.name || (b.customerId ? b.customerId.name : '-');
-              const sonOf = b.customerSnapshot?.sonOf || '-';
-              const nativePlace = b.customerSnapshot?.nativePlace || '-';
-              const phone = b.customerSnapshot?.phone || (b.customerId ? b.customerId.phone : '-');
-              
-              let statusClass = 'status-pending';
-              if (b.paymentStatus === 'Paid') statusClass = 'status-paid';
-              if (b.paymentStatus === 'Partially Paid') statusClass = 'status-partial';
-
-              return (
-                <tr key={b._id}>
-                  <td>{index + 1}</td>
-                  <td>{custName}</td>
-                  <td>{sonOf}</td>
-                  <td>{nativePlace}</td>
-                  <td>{phone}</td>
-                  <td className="text-right" style={{ fontWeight: 'bold' }}>{formatCurrency(b.totalAmount)}</td>
-                  <td className="text-right">{formatCurrency(b.totalPaid)}</td>
-                  <td className="text-right">{formatCurrency(b.balanceAmount)}</td>
-                  <td className="text-center">
-                    <span className={`status-badge ${statusClass}`}>{b.paymentStatus || 'Pending'}</span>
-                  </td>
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '5%' }}>No.</th>
+                  <th style={{ width: '20%' }}>Customer Name</th>
+                  <th style={{ width: '15%' }}>S/O Name</th>
+                  <th style={{ width: '15%' }}>Native Place</th>
+                  <th style={{ width: '12%' }}>Phone</th>
+                  <th style={{ width: '13%' }}>Event</th>
+                  <th className="text-right" style={{ width: '10%' }}>Paid</th>
+                  <th className="text-center" style={{ width: '10%' }}>Status</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {pageBills.map((b, index) => {
+                  const globalIndex = (pageIndex * ROWS_PER_PAGE) + index + 1;
+                  const custName = b.customerSnapshot?.name || (b.customerId ? b.customerId.name : '-');
+                  const sonOf = b.customerSnapshot?.sonOf || '-';
+                  const nativePlace = b.customerSnapshot?.nativePlace || '-';
+                  const phone = b.customerSnapshot?.phone || (b.customerId ? b.customerId.phone : '-');
+                  
+                  let statusClass = 'status-pending';
+                  if (b.paymentStatus === 'Paid') statusClass = 'status-paid';
+                  if (b.paymentStatus === 'Partially Paid') statusClass = 'status-partial';
 
-        <div className="report-summary">
-          <div className="summary-col">
-            <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>Bill Counts</h3>
-            <div className="summary-row"><span>Total Bills:</span> <strong>{totalBills}</strong></div>
-            <div className="summary-row"><span>Fully Paid:</span> <strong>{fullyPaidCount}</strong></div>
-            <div className="summary-row"><span>Partially Paid:</span> <strong>{partialCount}</strong></div>
-            <div className="summary-row"><span>Pending:</span> <strong>{pendingCount}</strong></div>
+                  return (
+                    <tr key={b._id}>
+                      <td>{globalIndex}</td>
+                      <td>{custName}</td>
+                      <td>{sonOf}</td>
+                      <td>{nativePlace}</td>
+                      <td>{phone}</td>
+                      <td>
+                        <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{b.eventType}</div>
+                        <div style={{ fontSize: '9px', color: '#555' }}>{formatDate(b.eventDate || b.createdAt)}</div>
+                      </td>
+                      <td className="text-right" style={{ fontWeight: 'bold' }}>{formatCurrency(b.totalPaid)}</td>
+                      <td className="text-center">
+                        <span className={status-badge  + statusClass}>{b.paymentStatus || 'Pending'}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="spacer"></div>
+
+            <div className="page-summary">
+              <div>Page {pageNum} Bill Count: {pageBillCount}</div>
+              <div>Page {pageNum} Paid Total: {formatCurrency(pagePaidTotal)}</div>
+            </div>
+
+            {isLastPage && (
+              <div className="grand-summary">
+                <div>GRAND TOTAL - ENTIRE REPORT</div>
+                <div>Total Bills: {totalBills}</div>
+                <div>Total Amount Paid: {formatCurrency(totalPaid)}</div>
+              </div>
+            )}
+
+            <div className="page-footer">
+              Page {pageNum} of {totalPages}
+            </div>
           </div>
-          <div className="summary-col">
-            <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>Financial Summary</h3>
-            <div className="summary-row"><span>Total Bill Amount:</span> <strong>{formatCurrency(totalAmount)}</strong></div>
-            <div className="summary-row"><span>Total Amount Paid:</span> <strong>{formatCurrency(totalPaid)}</strong></div>
-            <div className="summary-row total"><span>Total Outstanding Balance:</span> <span>{formatCurrency(totalBalance)}</span></div>
-          </div>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 };
