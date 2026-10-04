@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API from '../services/api';
 import { downloadBillPdf, getBillPdfBlob } from '../services/billService';
+import { generateHTML } from '../utils/billTemplate';
 
 const Receipt = () => {
   const { id } = useParams();
@@ -71,6 +72,27 @@ const Receipt = () => {
       alert('Unable to prepare WhatsApp sharing. Please try downloading the PDF manually.');
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (window.electronAPI) {
+      const width = localStorage.getItem('receiptWidth') || '80mm';
+      const html = generateHTML(bill, '', width);
+      const fullHtml = `
+        <html><head><style>
+          @page { size: ${width} auto; margin: 0; }
+          body { width: ${width}; margin: 0; padding: 4mm; box-sizing: border-box; background: white; }
+          .no-print { display: none !important; }
+        </style></head><body>
+        <div class="print-receipt">
+        ${html}
+        </div>
+        </body></html>
+      `;
+      await window.electronAPI.printHtml(fullHtml);
+    } else {
+      window.open(window.location.protocol === 'app:' ? `app://index.html#/bills/${bill._id}/print` : `/bills/${bill._id}/print`, '_blank');
     }
   };
 

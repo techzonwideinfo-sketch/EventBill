@@ -17,9 +17,15 @@ export const generatePdfBuffer = async (bill) => {
   
   const htmlContent = generateHTML(bill, fontBase64);
 
+  let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  if (!executablePath) {
+    const defaultPath = puppeteer.executablePath();
+    executablePath = typeof defaultPath === 'string' ? defaultPath : await defaultPath;
+  }
+
   const browser = await puppeteer.launch({ 
     headless: 'new',
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+    executablePath,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security', '--disable-dev-shm-usage']
   });
   try {
