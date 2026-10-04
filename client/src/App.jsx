@@ -45,6 +45,7 @@ import Settings from './pages/Settings';
 import PrintBill from './pages/PrintBill';
 import SelectEvent from './pages/SelectEvent';
 import EventTypes from './pages/EventTypes';
+import Receipt from './pages/Receipt';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
             <Route path="bills" element={<Bills />} />
             <Route path="select-event" element={<SelectEvent />} />
             <Route path="create-bill/:eventId" element={<CreateBill />} />
+            <Route path="bills/:id/receipt" element={<Receipt />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="customers" element={<Customers />} />
             <Route path="event-types" element={<EventTypes />} />
