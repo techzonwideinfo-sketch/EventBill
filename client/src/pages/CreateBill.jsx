@@ -12,28 +12,25 @@ import { transliterateText } from '../utils/tamilTransliteration';
 const CreateBill = () => {
   const { t, lang } = useContext(I18nContext);
   const navigate = useNavigate();
-  const location = useLocation();
-  const selectedEvent = location.state?.selectedEvent;
   
   const [successBill, setSuccessBill] = useState(null);
   const [checkoutBill, setCheckoutBill] = useState(null);
 
   const [formData, setFormData] = useState({
     customerSnapshot: { name: '', phone: '', address: '' },
-    eventType: selectedEvent ? selectedEvent.name : '',
-    eventTypeNameEn: selectedEvent ? selectedEvent.name : '',
-    eventTypeNameTa: selectedEvent ? (selectedEvent.tamilName || selectedEvent.name) : '',
+    eventType: 'E-MOI',
+    eventTypeNameEn: 'E-MOI',
+    eventTypeNameTa: 'E-MOI',
     otherEventType: '',
     otherEventTypeTa: '',
     eventDate: new Date().toISOString().slice(0,10),
-    venue: selectedEvent?.defaultVenue || '',
+    venue: '',
     items: [{ service: '', quantity: 1, rate: 0 }],
     advancePaid: 0,
     billLanguage: 'English',
     notes: ''
   });
   
-  const [servicesLoading, setServicesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [customerMode, setCustomerMode] = useState('new');
@@ -76,32 +73,10 @@ const CreateBill = () => {
   }, [formData, subtotal, balance]);
 
   useEffect(() => {
-    if (!selectedEvent) {
-      navigate('/select-event');
-      return;
-    }
-
     API.get('/customers').then(res => {
       setCustomers(res.data.data);
     }).catch(err => console.error(err));
-
-    setServicesLoading(true);
-    API.get(`/event-types/${selectedEvent._id}/services`).then(res => {
-      const activeServices = res.data.data.filter(s => s.isActive);
-      if (activeServices.length > 0) {
-        const preloadedItems = activeServices.map(s => ({
-          service: s.name,
-          quantity: s.defaultQuantity || 1,
-          rate: s.defaultUnitPrice || 0
-        }));
-        setFormData(prev => ({ ...prev, items: preloadedItems }));
-      }
-      setServicesLoading(false);
-    }).catch(err => {
-      console.error(err);
-      setServicesLoading(false);
-    });
-  }, [selectedEvent, navigate]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -109,13 +84,9 @@ const CreateBill = () => {
     try {
       const dataToSubmit = {
         ...formData,
-        eventLogo: selectedEvent?.logo || '',
+        eventLogo: '',
         items: formData.items.map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) }))
       };
-      if (dataToSubmit.eventType === 'Other') {
-        dataToSubmit.eventTypeNameEn = dataToSubmit.otherEventType;
-        dataToSubmit.eventTypeNameTa = dataToSubmit.otherEventTypeTa || dataToSubmit.otherEventType;
-      }
       const res = await API.post('/bills', dataToSubmit);
       setLoading(false);
       setCheckoutBill(res.data.data);
@@ -129,9 +100,9 @@ const CreateBill = () => {
     setSuccessBill(null);
     setFormData({
       customerSnapshot: { name: '', phone: '', address: '' },
-      eventType: 'Marriage',
-      eventTypeNameEn: 'Marriage',
-      eventTypeNameTa: 'திருமணம்',
+      eventType: 'E-MOI',
+      eventTypeNameEn: 'E-MOI',
+      eventTypeNameTa: 'E-MOI',
       otherEventType: '',
       otherEventTypeTa: '',
       eventDate: new Date().toISOString().slice(0,10),
@@ -285,80 +256,43 @@ const CreateBill = () => {
                 </div>
               </div>
 
-              {/* Event Details */}
+              {/* Bill Details */}
               <div className="space-y-4">
                 <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2 flex items-center gap-2">
                   <span className="bg-blue-50 text-[#30497D] w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                  {t('Event Details')}
+                  {t('Bill Details', 'பில் விவரங்கள்')}
                 </h3>
-                <div>
-                  <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Event Type')}</label>
-                  <div className="w-full border border-gray-200 p-2.5 rounded-lg bg-gray-100 text-gray-500 font-medium">
-                    {lang === 'ta' && selectedEvent?.tamilName ? selectedEvent.tamilName : selectedEvent?.name}
-                  </div>
-                </div>
                 <div>
                   <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Date')}</label>
                   <input type="date" required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.eventDate} onChange={e=>setFormData(prev=>({...prev, eventDate: e.target.value}))} />
                 </div>
-                
-                <datalist id="venue-presets">
-                  <option value="Sri Devi Mahal" />
-                  <option value="KRS Mahal" />
-                  <option value="Lakshmi Hall" />
-                  <option value="Sree Convention Centre" />
-                  <option value="Other" />
-                </datalist>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-[#455B8A] mb-1.5">{t('Venue')}</label>
-                  <TamilTransliterationInput language={formData.billLanguage} type="text" list="venue-presets" placeholder={t('Venue') + " (e.g. Sri Devi Mahal)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] focus:border-transparent outline-none bg-gray-50 text-[#253C6D] transition-shadow" value={formData.venue} onChange={e=>setFormData(prev=>({...prev, venue: e.target.value}))} />
-                </div>
               </div>
             </div>
 
-            {/* Services */}
+            {/* Contributions / Items */}
             <div className="space-y-4">
               <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2 flex items-center gap-2">
                 <span className="bg-blue-50 text-[#30497D] w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                {t('Services')}
+                {t('Contributions / Items', 'பங்களிப்புகள் / பொருட்கள்')}
               </h3>
               
               <datalist id="service-presets">
-                <option value="Decoration" />
-                <option value="Catering" />
-                <option value="Photography" />
-                <option value="Videography" />
-                <option value="Stage Setup" />
-                <option value="Lighting" />
-                <option value="Sound System" />
-                <option value="Flowers" />
-                <option value="Mehendi" />
-                <option value="Makeup" />
-                <option value="Dining Setup" />
-                <option value="Chairs" />
-                <option value="Tables" />
-                <option value="Transportation" />
+                <option value="Cash Contribution" />
+                <option value="Gold Ring" />
+                <option value="Gold Chain" />
+                <option value="Silver Item" />
+                <option value="Gift Item" />
                 <option value="Other" />
-                <option value="அலங்காரம்" />
-                <option value="சமையல்" />
-                <option value="புகைப்படம்" />
-                <option value="வீடியோ" />
-                <option value="மேடை அமைப்பு" />
-                <option value="விளக்குகள்" />
-                <option value="ஒலி அமைப்பு" />
-                <option value="மலர் அலங்காரம்" />
-                <option value="மெஹந்தி" />
-                <option value="மேக்கப்" />
-                <option value="சாப்பாட்டு ஏற்பாடு" />
-                <option value="நாற்காலிகள்" />
-                <option value="மேசைகள்" />
-                <option value="போக்குவரத்து" />
+                <option value="பண மொய்" />
+                <option value="தங்க மோதிரம்" />
+                <option value="தங்க சங்கிலி" />
+                <option value="வெள்ளி பொருள்" />
+                <option value="பரிசு பொருள்" />
                 <option value="மற்றவை" />
               </datalist>
 
               <div className="hidden sm:flex space-x-3 mb-2 text-xs font-bold text-[#455B8A] uppercase tracking-wider px-2">
-                <div className="flex-1">{t('Service')}</div>
+                <div className="flex-1">{t('Item', 'பொருள்')}</div>
                 <div className="w-24 text-center">{t('Qty')}</div>
                 <div className="w-32 text-center">{t('Rate')}</div>
                 <div className="w-32 text-right">{t('Amount')}</div>
@@ -368,8 +302,8 @@ const CreateBill = () => {
               {formData.items.map((item, index) => (
                 <div key={index} className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-2 items-center bg-gray-50 p-4 sm:bg-transparent sm:p-0 rounded-lg sm:rounded-none border sm:border-none border-gray-200">
                   <div className="w-full sm:flex-1">
-                    <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Service')}</label>
-                    <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets" placeholder={t('Service') + " (e.g. Photography)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white sm:bg-gray-50 text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
+                    <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Item', 'பொருள்')}</label>
+                    <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets" placeholder={t('Item', 'பொருள்') + " (e.g. Cash Contribution)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white sm:bg-gray-50 text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
                   </div>
                   
                   <div className="flex w-full sm:w-auto gap-3">
@@ -397,7 +331,7 @@ const CreateBill = () => {
                   )}
                 </div>
               ))}
-              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Service') || 'Add Another Service'}</button>
+              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Item', 'மற்றொரு பொருளைச் சேர்')}</button>
             </div>
 
             {/* Payment & Language */}

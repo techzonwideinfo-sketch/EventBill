@@ -51,11 +51,9 @@ const MainLayout = () => {
 
   const navLinks = [
     { name: t('Dashboard'), path: '/' },
-    { name: t('Create Bill'), path: '/create-bill' },
+    { name: t('Create MOI Bill'), path: '/create-bill' },
     { name: t('Bill History'), path: '/bills' },
     { name: t('Customers'), path: '/customers' },
-    // Mock routes for requested UI
-    { name: t('Event Types'), path: '/event-types' },
     { name: t('Settings'), path: '/settings' }
   ];
 

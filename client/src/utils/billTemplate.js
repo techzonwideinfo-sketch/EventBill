@@ -261,7 +261,7 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       <table>
         <thead>
           <tr>
-            <th class="col-srv">${t('SERVICE', 'சேவை')}</th>
+            <th class="col-srv">${t('ITEM / CONTRIBUTION', 'பொருள் / பங்களிப்பு')}</th>
             <th class="col-qty">${t('QTY', 'அளவு')}</th>
             <th class="col-rate">${t('RATE', 'விலை')}</th>
             <th class="col-amt">${t('AMOUNT', 'தொகை')}</th>

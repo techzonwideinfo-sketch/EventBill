@@ -38,11 +38,9 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Bills from './pages/Bills';
-import SelectEvent from './pages/SelectEvent';
 import CreateBill from './pages/CreateBill';
 import EditBill from './pages/EditBill';
 import Customers from './pages/Customers';
-import EventTypes from './pages/EventTypes';
 import Settings from './pages/Settings';
 import PrintBill from './pages/PrintBill';
 
@@ -59,11 +57,9 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="bills" element={<Bills />} />
-            <Route path="select-event" element={<SelectEvent />} />
             <Route path="create-bill" element={<CreateBill />} />
             <Route path="bills/:id/edit" element={<EditBill />} />
             <Route path="customers" element={<Customers />} />
-            <Route path="event-types" element={<EventTypes />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="/bills/:id/print" element={<PrintBill />} />

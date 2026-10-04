@@ -212,48 +212,30 @@ const EditBill = () => {
               </div>
             </div>
 
-            {/* Services */}
+            {/* Contributions / Items */}
             <div className="space-y-4">
               <h3 className="font-bold text-[#30497D] text-lg border-b border-gray-100 pb-2 flex items-center gap-2">
                 <span className="bg-blue-50 text-[#30497D] w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-                {t('Services')}
+                {t('Contributions / Items', 'பங்களிப்புகள் / பொருட்கள்')}
               </h3>
 
               <datalist id="service-presets-edit">
-                <option value="Decoration" />
-                <option value="Catering" />
-                <option value="Photography" />
-                <option value="Videography" />
-                <option value="Stage Setup" />
-                <option value="Lighting" />
-                <option value="Sound System" />
-                <option value="Flowers" />
-                <option value="Mehendi" />
-                <option value="Makeup" />
-                <option value="Dining Setup" />
-                <option value="Chairs" />
-                <option value="Tables" />
-                <option value="Transportation" />
+                <option value="Cash Contribution" />
+                <option value="Gold Ring" />
+                <option value="Gold Chain" />
+                <option value="Silver Item" />
+                <option value="Gift Item" />
                 <option value="Other" />
-                <option value="அலங்காரம்" />
-                <option value="சமையல்" />
-                <option value="புகைப்படம்" />
-                <option value="வீடியோ" />
-                <option value="மேடை அமைப்பு" />
-                <option value="விளக்குகள்" />
-                <option value="ஒலி அமைப்பு" />
-                <option value="மலர் அலங்காரம்" />
-                <option value="மெஹந்தி" />
-                <option value="மேக்கப்" />
-                <option value="சாப்பாட்டு ஏற்பாடு" />
-                <option value="நாற்காலிகள்" />
-                <option value="மேசைகள்" />
-                <option value="போக்குவரத்து" />
+                <option value="பண மொய்" />
+                <option value="தங்க மோதிரம்" />
+                <option value="தங்க சங்கிலி" />
+                <option value="வெள்ளி பொருள்" />
+                <option value="பரிசு பொருள்" />
                 <option value="மற்றவை" />
               </datalist>
               
               <div className="hidden sm:flex space-x-3 mb-2 text-xs font-bold text-[#455B8A] uppercase tracking-wider px-2">
-                <div className="flex-1">{t('Service')}</div>
+                <div className="flex-1">{t('Item', 'பொருள்')}</div>
                 <div className="w-24 text-center">{t('Qty')}</div>
                 <div className="w-32 text-center">{t('Rate')}</div>
                 <div className="w-32 text-right">{t('Amount')}</div>
@@ -263,8 +245,8 @@ const EditBill = () => {
               {(formData.items || []).map((item, index) => (
                 <div key={index} className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-2 items-center bg-gray-50 p-4 sm:bg-transparent sm:p-0 rounded-lg sm:rounded-none border sm:border-none border-gray-200">
                   <div className="w-full sm:flex-1">
-                    <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Service')}</label>
-                    <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets-edit" placeholder={t('Service') + " (e.g. Photography)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white sm:bg-gray-50 text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
+                    <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Item', 'பொருள்')}</label>
+                    <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets-edit" placeholder={t('Item', 'பொருள்') + " (e.g. Cash Contribution)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white sm:bg-gray-50 text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
                   </div>
                   
                   <div className="flex w-full sm:w-auto gap-3">
@@ -292,7 +274,7 @@ const EditBill = () => {
                   )}
                 </div>
               ))}
-              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Service') || 'Add Another Service'}</button>
+              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Item', 'மற்றொரு பொருளைச் சேர்')}</button>
             </div>
 
             {/* Payment & Language */}
