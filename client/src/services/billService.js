@@ -1,5 +1,12 @@
 import API from './api';
 
+export const getBillPdfBlob = async (billId) => {
+  const response = await API.get(`/bills/${billId}/pdf`, {
+    responseType: 'blob'
+  });
+  return new Blob([response.data], { type: 'application/pdf' });
+};
+
 export const downloadBillPdf = async (billId, billNumber = 'Bill') => {
   try {
     const response = await API.get(`/bills/${billId}/pdf`, {
