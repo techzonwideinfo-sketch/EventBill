@@ -1,4 +1,5 @@
 import { generateHTML } from './billTemplate';
+import eventHistoryCss from '../styles/event-history-print.css?raw';
 
 export const printBill = async (bill) => {
   const width = localStorage.getItem('receiptWidth') || '80mm';
@@ -54,6 +55,69 @@ export const printBill = async (bill) => {
           resolve({ success: true, method: 'iframe' });
         }, 1000); // Cleanup after print dialog opens
       }, 500);
+    } catch (err) {
+      console.error("Iframe print failed", err);
+      resolve({ success: false, error: err });
+    }
+  });
+};
+
+export const printA4Report = async (htmlContent) => {
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Event Bill History Report</title>
+        <style>
+          ${eventHistoryCss}
+        </style>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+          tailwind.config = { corePlugins: { preflight: false } }
+        </script>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+    </html>
+  `;
+
+  if (window.electronAPI && window.electronAPI.printHtml) {
+    try {
+      await window.electronAPI.printHtml(fullHtml);
+      return { success: true, method: 'electron' };
+    } catch (err) {
+      console.error("Electron print failed", err);
+    }
+  }
+
+  return new Promise((resolve) => {
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(fullHtml);
+      doc.close();
+      
+      iframe.contentWindow.focus();
+      setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+             document.body.removeChild(iframe);
+          }
+          resolve({ success: true, method: 'iframe' });
+        }, 1000);
+      }, 1000); // give a bit more time for tailwind cdn to process
     } catch (err) {
       console.error("Iframe print failed", err);
       resolve({ success: false, error: err });

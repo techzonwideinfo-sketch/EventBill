@@ -4,6 +4,9 @@ import { I18nContext } from '../layouts/MainLayout';
 import { Link, useNavigate } from 'react-router-dom';
 import { downloadBillPdf } from '../services/billService';
 import WhatsAppModal from '../components/WhatsAppModal';
+import { printA4Report } from '../utils/printUtils';
+import { renderToString } from 'react-dom/server';
+import EventBillHistoryReport from '../components/EventBillHistoryReport';
 
 const Bills = () => {
   const [bills, setBills] = useState([]);
@@ -11,19 +14,55 @@ const Bills = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [eventTypesList, setEventTypesList] = useState([]);
   const [shareBill, setShareBill] = useState(null);
   const [printingId, setPrintingId] = useState(null);
+  const [printingReport, setPrintingReport] = useState(false);
   
   const { t } = useContext(I18nContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchBills();
+    API.get('/event-types').then(res => setEventTypesList(res.data.data.map(e => e.name).filter(Boolean))).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    fetchBills();
+  }, [eventFilter, statusFilter, dateFilter, customStart, customEnd]);
 
   const fetchBills = () => {
     setLoading(true);
-    API.get('/bills')
+    let params = {};
+    if (eventFilter) params.eventType = eventFilter;
+    if (statusFilter) params.status = statusFilter;
+    
+    if (dateFilter) {
+      const today = new Date();
+      if (dateFilter === 'Today') {
+        params.startDate = today.toISOString().split('T')[0];
+        params.endDate = params.startDate;
+      } else if (dateFilter === 'Yesterday') {
+        const yest = new Date(today);
+        yest.setDate(yest.getDate() - 1);
+        params.startDate = yest.toISOString().split('T')[0];
+        params.endDate = params.startDate;
+      } else if (dateFilter === 'This Week') {
+        const first = today.getDate() - today.getDay();
+        const firstDay = new Date(today.setDate(first));
+        params.startDate = firstDay.toISOString().split('T')[0];
+      } else if (dateFilter === 'This Month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        params.startDate = firstDay.toISOString().split('T')[0];
+      } else if (dateFilter === 'Custom') {
+        if (customStart) params.startDate = customStart;
+        if (customEnd) params.endDate = customEnd;
+      }
+    }
+
+    API.get('/bills', { params })
       .then(res => {
         setBills(res.data.data);
         setLoading(false);
@@ -81,14 +120,21 @@ const Bills = () => {
     const billNo = b.billNumber?.toLowerCase() || '';
     const custName = (b.customerSnapshot?.name || b.customerId?.name || '').toLowerCase();
     
-    const matchesSearch = !searchQuery || custName.includes(query);
-    const matchesStatus = !statusFilter || b.paymentStatus === statusFilter;
-    const matchesEvent = !eventFilter || b.eventType === eventFilter;
-    
-    return matchesSearch && matchesStatus && matchesEvent;
+    return !searchQuery || custName.includes(query) || billNo.includes(query);
   });
 
-  const eventTypes = [...new Set(bills.map(b => b.eventType).filter(Boolean))];
+  const handlePrintReport = async () => {
+    setPrintingReport(true);
+    let dateStr = dateFilter;
+    if (dateFilter === 'Custom') {
+      dateStr = `${customStart} to ${customEnd}`;
+    }
+    const htmlString = renderToString(
+      <EventBillHistoryReport bills={filteredBills} eventName={eventFilter} dateRangeStr={dateStr} />
+    );
+    await printA4Report(htmlString);
+    setPrintingReport(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -99,9 +145,24 @@ const Bills = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">{t('Bill History')}</h1>
           <p className="text-sm text-[#455B8A] mt-1">Manage and track your event bills.</p>
         </div>
-        <Link to="/select-event" className="bg-[#F2842F] text-white px-5 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors w-full sm:w-auto text-center">
-          + {t('Create MOI Bill')}
-        </Link>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button 
+            onClick={handlePrintReport}
+            disabled={!eventFilter || printingReport}
+            className="bg-white border border-[#455B8A] text-[#455B8A] px-4 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!eventFilter ? "Please select an event first" : "Print Report"}
+          >
+            {printingReport ? (
+              <svg className="w-4 h-4 animate-spin text-[#455B8A]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            )}
+            Print Event Report (A4)
+          </button>
+          <Link to="/select-event" className="bg-[#F2842F] text-white px-5 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors text-center whitespace-nowrap">
+            + {t('Create MOI Bill')}
+          </Link>
+        </div>
       </div>
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -115,17 +176,17 @@ const Bills = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto">
             <select 
-              className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-48 transition-shadow"
+              className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-40 transition-shadow"
               value={eventFilter}
               onChange={e => setEventFilter(e.target.value)}
             >
               <option value="">All Events</option>
-              {eventTypes.map(e => <option key={e} value={e}>{e}</option>)}
+              {eventTypesList.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
             <select 
-              className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-48 transition-shadow"
+              className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-36 transition-shadow"
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
             >
@@ -134,6 +195,25 @@ const Bills = () => {
               <option value="Partially Paid">Partially Paid</option>
               <option value="Pending">Pending</option>
             </select>
+            <select 
+              className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-36 transition-shadow"
+              value={dateFilter}
+              onChange={e => setDateFilter(e.target.value)}
+            >
+              <option value="">All Time</option>
+              <option value="Today">Today</option>
+              <option value="Yesterday">Yesterday</option>
+              <option value="This Week">This Week</option>
+              <option value="This Month">This Month</option>
+              <option value="Custom">Custom</option>
+            </select>
+            {dateFilter === 'Custom' && (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <input type="date" value={customStart} onChange={e=>setCustomStart(e.target.value)} className="border border-gray-200 p-2.5 rounded-lg text-sm bg-gray-50" />
+                <span className="self-center text-gray-500">to</span>
+                <input type="date" value={customEnd} onChange={e=>setCustomEnd(e.target.value)} className="border border-gray-200 p-2.5 rounded-lg text-sm bg-gray-50" />
+              </div>
+            )}
           </div>
         </div>
 

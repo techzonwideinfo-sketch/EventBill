@@ -7,7 +7,36 @@ import crypto from 'crypto';
 
 export const getBills = async (req, res) => {
   try {
-    const bills = await Bill.find({ userId: req.user.id }).populate('customerId').sort({ createdAt: -1 });
+    const { eventType, startDate, endDate, status, search } = req.query;
+    
+    let query = { userId: req.user.id };
+
+    if (eventType) query.eventType = eventType;
+    if (status) query.paymentStatus = status;
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      // For endDate, if it's just a date (YYYY-MM-DD), we should include the whole day.
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setUTCHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    let bills = await Bill.find(query).populate('customerId').sort({ createdAt: -1 });
+
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      bills = bills.filter(b => {
+        const billNo = b.billNumber?.toLowerCase() || '';
+        const custName = b.customerSnapshot?.name || b.customerId?.name || '';
+        const custPhone = b.customerSnapshot?.phone || b.customerId?.phone || '';
+        return searchRegex.test(billNo) || searchRegex.test(custName) || searchRegex.test(custPhone);
+      });
+    }
+
     res.json({ success: true, data: bills });
   } catch (err) { 
     console.error('getBills error:', err);
