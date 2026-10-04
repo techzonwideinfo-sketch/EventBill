@@ -15,13 +15,13 @@ export const getBills = async (req, res) => {
     if (status) query.paymentStatus = status;
 
     if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
+      query.eventDate = {};
+      if (startDate) query.eventDate.$gte = new Date(startDate);
       // For endDate, if it's just a date (YYYY-MM-DD), we should include the whole day.
       if (endDate) {
         const end = new Date(endDate);
         end.setUTCHours(23, 59, 59, 999);
-        query.createdAt.$lte = end;
+        query.eventDate.$lte = end;
       }
     }
 

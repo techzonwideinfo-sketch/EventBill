@@ -84,19 +84,19 @@ const EventBillHistoryReport = () => {
     window.close();
   };
 
-  if (loading) return <div style={{ padding: '20px', fontSize: '18px' }}>Preparing report, please wait...</div>;
+  if (loading) return <div style={{ padding: '20px', fontSize: '18px', color: '#000', backgroundColor: '#fff', minHeight: '100vh' }}>Preparing report, please wait...</div>;
   if (error) return (
-    <div style={{ padding: '20px', color: 'red' }}>
+    <div style={{ padding: '20px', color: 'red', backgroundColor: '#fff', minHeight: '100vh' }}>
       <h2>Error Preparing Report</h2>
       <p>{error}</p>
-      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer' }}>Close Window</button>
+      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
     </div>
   );
   if (bills.length === 0) return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '20px', color: '#000', backgroundColor: '#fff', minHeight: '100vh' }}>
       <h2>No Records Found</h2>
       <p>No bills match the selected criteria for this report.</p>
-      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer' }}>Close Window</button>
+      <button onClick={handleClose} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1', borderRadius: '4px' }}>Close Window</button>
     </div>
   );
 
