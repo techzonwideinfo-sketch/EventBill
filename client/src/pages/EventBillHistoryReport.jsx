@@ -19,20 +19,34 @@ const EventBillHistoryReport = () => {
   const navigate = useNavigate();
 
   const queryParams = new URLSearchParams(location.search);
-  const eventFilter = queryParams.get('event');
+  const eventId = queryParams.get('eventId');
+  const eventFilterFallback = queryParams.get('event'); // for backwards compat
   const dateFilter = queryParams.get('dateFilter');
   const customStart = queryParams.get('customStart');
   const customEnd = queryParams.get('customEnd');
   const statusFilter = queryParams.get('status');
 
+  const [eventName, setEventName] = useState(eventFilterFallback || '');
+
   useEffect(() => {
-    if (!eventFilter) {
+    if (!eventId && !eventFilterFallback) {
       setError("No event specified for the report.");
       setLoading(false);
       return;
     }
 
-    let params = { eventType: eventFilter };
+    let params = {};
+    if (eventId) {
+      params.eventId = eventId;
+      // Fetch the actual event name for the header
+      API.get(`/event-types/${eventId}`).then(res => {
+        if (res.data?.data?.name) {
+          setEventName(res.data.data.name);
+        }
+      }).catch(err => console.error("Error fetching event type:", err));
+    } else {
+      params.eventType = eventFilterFallback;
+    }
     if (statusFilter) params.status = statusFilter;
 
     if (dateFilter) {
@@ -65,10 +79,10 @@ const EventBillHistoryReport = () => {
       })
       .catch(err => {
         console.error(err);
-        setError("Failed to fetch matching bills: " + err.message);
+        setError("Failed to fetch matching bills: " + (err.response?.data?.message || err.message));
         setLoading(false);
       });
-  }, [eventFilter, statusFilter, dateFilter, customStart, customEnd]);
+  }, [eventId, eventFilterFallback, statusFilter, dateFilter, customStart, customEnd]);
 
   useEffect(() => {
     // Only print once loading is complete and no errors occurred
@@ -160,7 +174,7 @@ const EventBillHistoryReport = () => {
           <h1 className="report-title">E-MOI Event Bill History Report</h1>
           <div className="report-meta">
             <div>
-              <strong>Event:</strong> {eventFilter} <br/>
+              <strong>Event:</strong> {eventName || 'All Events'} <br/>
               <strong>Date Range:</strong> {dateStr}
             </div>
             <div style={{ textAlign: 'right' }}>

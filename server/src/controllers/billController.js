@@ -1,5 +1,6 @@
 import Bill from '../models/Bill.js';
 import Customer from '../models/Customer.js';
+import EventType from '../models/EventType.js';
 import Payment from '../models/Payment.js';
 import { calculateBillTotals } from '../utils/calculations.js';
 import { generateBillNumber } from '../utils/billNumberGenerator.js';
@@ -7,11 +8,18 @@ import crypto from 'crypto';
 
 export const getBills = async (req, res) => {
   try {
-    const { eventType, startDate, endDate, status, search } = req.query;
+    const { eventType, eventId, startDate, endDate, status, search } = req.query;
     
     let query = { userId: req.user.id };
 
-    if (eventType) query.eventType = eventType;
+    if (eventId) {
+      const eventRecord = await EventType.findById(eventId);
+      if (eventRecord) {
+        query.eventType = eventRecord.name;
+      }
+    } else if (eventType) {
+      query.eventType = eventType;
+    }
     if (status) query.paymentStatus = status;
 
     if (startDate || endDate) {

@@ -22,7 +22,7 @@ const Bills = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    API.get('/event-types').then(res => setEventTypesList(res.data.data.map(e => e.name).filter(Boolean))).catch(console.error);
+    API.get('/event-types').then(res => setEventTypesList(res.data.data)).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ const Bills = () => {
   const fetchBills = () => {
     setLoading(true);
     let params = {};
-    if (eventFilter) params.eventType = eventFilter;
+    if (eventFilter) params.eventId = eventFilter;
     if (statusFilter) params.status = statusFilter;
     
     if (dateFilter) {
@@ -123,7 +123,7 @@ const Bills = () => {
     if (!eventFilter) return;
 
     const params = new URLSearchParams();
-    params.append('event', eventFilter);
+    params.append('eventId', eventFilter);
     if (statusFilter) params.append('status', statusFilter);
     if (dateFilter) params.append('dateFilter', dateFilter);
     if (customStart) params.append('customStart', customStart);
@@ -131,7 +131,9 @@ const Bills = () => {
 
     let printUrl = `/report/event-history?${params.toString()}`;
     if (window.location.protocol === 'app:') {
-      printUrl = `app://index.html${printUrl}`;
+      printUrl = `app://index.html#${printUrl}`;
+    } else if (window.location.hash || window.location.protocol === 'file:') {
+      printUrl = `/#${printUrl}`;
     }
 
     const newWin = window.open(printUrl, '_blank', 'width=1000,height=900,left=100,top=100');
@@ -183,7 +185,7 @@ const Bills = () => {
               onChange={e => setEventFilter(e.target.value)}
             >
               <option value="">All Events</option>
-              {eventTypesList.map(e => <option key={e} value={e}>{e}</option>)}
+              {eventTypesList.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
             </select>
             <select 
               className="border border-gray-200 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-[#30497D] text-sm bg-gray-50 w-full sm:w-36 transition-shadow"
