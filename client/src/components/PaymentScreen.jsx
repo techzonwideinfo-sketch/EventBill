@@ -6,9 +6,8 @@ import CashDenominationCounter from './CashDenominationCounter';
 
 const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   const { t } = useContext(I18nContext);
-  const [paymentMethod, setPaymentMethod] = useState('Cash'); // 'Cash' or 'QR'
+  const [paymentMethod, setPaymentMethod] = useState('Cash'); 
   const [amountReceived, setAmountReceived] = useState(bill.balanceAmount || bill.totalAmount);
-  const [reference, setReference] = useState('');
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -16,6 +15,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
   const [pollingStatus, setPollingStatus] = useState(false);
   const [pollIntervalId, setPollIntervalId] = useState(null);
   
+  const [showDenominations, setShowDenominations] = useState(false);
   const [denominationCounts, setDenominationCounts] = useState(bill.denominationCounts || {});
 
   useEffect(() => {
@@ -60,8 +60,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
           setPollingStatus(false);
           const billRes = await API.get(`/bills/${bill._id}`);
           setSuccess(true);
-          // Wait a moment for user to see success before redirecting to receipt
-          setTimeout(() => onComplete(billRes.data.data), 1500);
+          onComplete(billRes.data.data);
         }
       } catch (err) {
         console.error('Polling error', err);
@@ -94,8 +93,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
         amountReceived: amountReceivedNum,
         changeReturned,
         method: paymentMethod === 'QR' ? 'UPI' : 'Cash',
-        reference: reference,
-        status: status // Passing status explicitly for manual verification
+        status: status 
       };
 
       if (paymentMethod === 'Cash') {
@@ -104,14 +102,9 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
 
       const res = await API.post(`/bills/${bill._id}/payments`, payload);
       setLoading(false);
+      setSuccess(true);
       
-      if (status === 'Verified' || status === 'Paid') {
-         setSuccess(true);
-         setTimeout(() => onComplete(res.data.data.bill), 1500);
-      } else {
-         // Manual pending state
-         onComplete(res.data.data.bill);
-      }
+      onComplete(res.data.data.bill);
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || 'Error recording payment');
@@ -119,195 +112,208 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
     }
   };
 
-  const handleSkipPayment = () => {
-    onComplete(bill);
+  const handleQuickAmount = (amt) => {
+    setAmountReceived(amt);
   };
 
-  // Generate UPI URI
-  const upiId = settings?.upiId;
-  const merchantName = settings?.merchantName || 'Merchant';
   const amountToPay = bill.balanceAmount || bill.totalAmount;
+  const changeReturned = Number(amountReceived) > amountToPay ? (Number(amountReceived) - amountToPay) : 0;
+
   let upiUri = '';
-  if (upiId) {
-    upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(merchantName)}&am=${amountToPay}&cu=INR`;
+  if (settings?.upiId) {
+    upiUri = `upi://pay?pa=${encodeURIComponent(settings.upiId)}&pn=${encodeURIComponent(settings?.merchantName || 'Merchant')}&am=${amountToPay}&cu=INR`;
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto flex flex-col">
-      <header className="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <h2 className="text-xl font-bold text-[#253C6D]">Collect Payment</h2>
-        <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 bg-gray-100 p-2 rounded-full">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+    <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto flex flex-col font-sans">
+      
+      {/* HEADER */}
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4 sticky top-0 z-10 shadow-sm">
+        <button onClick={onCancel} className="text-gray-500 hover:text-[#253C6D] font-bold flex items-center gap-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+          Back / Close
         </button>
+        <div className="h-6 w-px bg-gray-300"></div>
+        <h2 className="text-xl font-extrabold text-[#253C6D] tracking-wide uppercase">Collect Payment</h2>
+        <span className="ml-auto text-xs text-gray-400 font-bold uppercase tracking-wider">Ref: #{bill.billNumber}</span>
       </header>
 
-      <main className="flex-1 p-4 max-w-4xl mx-auto w-full space-y-6 pb-24 flex flex-col md:flex-row gap-6">
+      <main className="flex-1 p-4 md:p-8 w-full max-w-5xl mx-auto space-y-6 pb-32">
         
-        <div className="flex-1 space-y-6">
-          {/* Bill Summary */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex justify-between items-center">
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Bill Amount</p>
-              <p className="text-3xl font-bold text-[#253C6D]">₹{bill.totalAmount.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500 font-bold mb-1 uppercase tracking-wider">Outstanding Balance</p>
-              <p className="font-bold text-3xl text-[#F2842F]">₹{bill.balanceAmount.toLocaleString('en-IN')}</p>
-            </div>
+        {/* AMOUNT SUMMARY */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex justify-between items-center text-center">
+          <div className="flex-1 border-r border-gray-200">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Total</p>
+            <p className="text-3xl font-extrabold text-gray-900">₹{bill.totalAmount.toLocaleString('en-IN')}</p>
           </div>
+          <div className="flex-1 border-r border-gray-200">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Paid</p>
+            <p className="text-3xl font-extrabold text-green-600">₹{bill.totalPaid.toLocaleString('en-IN')}</p>
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Balance</p>
+            <p className="text-4xl font-black text-[#F2842F]">₹{amountToPay.toLocaleString('en-IN')}</p>
+          </div>
+        </div>
 
-          {/* Payment Methods */}
-          <div>
-            <h3 className="text-sm font-bold text-gray-700 mb-3 ml-1 uppercase tracking-wider">Select Payment Mode</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button 
+        {/* PAYMENT METHOD */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 text-center">Payment Method</h3>
+           <div className="flex gap-4">
+             <button 
                 onClick={() => setPaymentMethod('Cash')}
-                className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'Cash' ? 'border-[#F2842F] bg-orange-50 text-[#F2842F]' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
+                className={`flex-1 py-5 rounded-xl border-2 font-black text-xl transition-all ${paymentMethod === 'Cash' ? 'border-[#253C6D] bg-blue-50 text-[#253C6D]' : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'}`}
               >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 CASH
               </button>
               <button 
                 onClick={() => { setPaymentMethod('QR'); if(settings?.dynamicQrProvider === 'Razorpay') generateDynamicQR(); }}
-                className={`p-4 rounded-xl border-2 font-bold text-lg flex flex-col items-center justify-center gap-2 transition-all ${paymentMethod === 'QR' ? 'border-green-500 bg-green-50 text-green-600' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
+                className={`flex-1 py-5 rounded-xl border-2 font-black text-xl transition-all ${paymentMethod === 'QR' ? 'border-[#25D366] bg-green-50 text-[#25D366]' : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'}`}
               >
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                 QR / UPI
               </button>
-            </div>
-          </div>
+           </div>
+        </div>
 
-          {/* Dynamic Payment Interface based on selection */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-            {success ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center">
-                 <div className="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4">
-                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                 </div>
-                 <h2 className="text-2xl font-bold text-[#253C6D] mb-2">Payment Verified ✓</h2>
-                 <p className="text-gray-500 font-medium">Redirecting to receipt...</p>
-              </div>
-            ) : paymentMethod === 'QR' ? (
-              <div className="flex flex-col items-center justify-center py-4 space-y-4 text-center">
-                
-                {settings?.dynamicQrProvider === 'Razorpay' ? (
-                   loading ? (
-                     <p className="font-bold text-gray-500">Generating Dynamic QR...</p>
-                  ) : dynamicQrData ? (
-                     <>
-                       <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
-                         <img src={dynamicQrData.qrImage} alt="Dynamic UPI QR" className="w-64 h-64 object-contain" />
-                       </div>
-                       <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Scan to pay exact amount: <span className="text-[#253C6D] text-2xl">₹{Number(dynamicQrData.amount).toLocaleString('en-IN')}</span></p>
-                       {pollingStatus && (
-                         <div className="flex items-center gap-2 text-green-600 mt-2 animate-pulse">
-                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                           <span className="text-sm font-bold">Waiting for payment confirmation...</span>
-                         </div>
-                       )}
-                     </>
-                  ) : (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-sm">
-                      <p className="font-bold text-yellow-800">Dynamic QR requires backend configuration</p>
-                      <button onClick={generateDynamicQR} className="mt-3 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-bold hover:bg-yellow-200 transition-colors">Retry Generate QR</button>
-                    </div>
-                  )
-                ) : (
-                  // Static QR Manual Verification Mode
-                  <>
-                    {upiId ? (
-                      <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
-                        <QRCodeSVG value={upiUri} size={256} />
-                      </div>
-                    ) : settings?.staticQrImage ? (
-                      <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm inline-block">
-                         <img src={settings.staticQrImage} alt="UPI QR" className="w-64 h-64 object-contain" />
-                      </div>
-                    ) : (
-                      <div className="text-center p-6 bg-orange-50 border border-orange-200 rounded-xl">
-                        <p className="text-orange-700 font-bold mb-2">No QR Code Configured</p>
-                        <p className="text-orange-600 text-sm">Please configure UPI ID or QR image in Settings.</p>
-                      </div>
-                    )}
-                    
-                    <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                      Amount to Pay: <span className="text-[#253C6D] text-2xl">₹{amountToPay.toLocaleString('en-IN')}</span>
-                    </p>
-                    
-                    <div className="w-full mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-left">
-                       <p className="text-yellow-800 font-bold text-sm mb-2">Manual Verification Required</p>
-                       <p className="text-yellow-700 text-xs mb-3">Scan the QR code and complete the payment. This is a static QR workflow; you must manually confirm receipt of funds.</p>
-                       <div className="flex gap-2">
-                         <button onClick={() => handleRecordPayment('Pending')} disabled={loading} className="flex-1 py-2 bg-yellow-100 text-yellow-800 font-bold rounded hover:bg-yellow-200 text-sm disabled:opacity-50">
-                           {loading ? 'Processing...' : 'Mark as Pending'}
-                         </button>
-                         <button onClick={() => handleRecordPayment('Verified')} disabled={loading} className="flex-1 py-2 bg-green-100 text-green-800 font-bold rounded hover:bg-green-200 text-sm disabled:opacity-50">
-                           {loading ? 'Processing...' : 'Confirm Payment'}
-                         </button>
-                       </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              // Cash Payment Mode
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Amount Received</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">₹</span>
+        {/* DYNAMIC PAYMENT AREA */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 min-h-[300px]">
+          
+          {paymentMethod === 'Cash' ? (
+            
+            // CASH MODE
+            <div className="max-w-2xl mx-auto space-y-6">
+               <div>
+                  <label className="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 text-center">Amount Received</label>
+                  <div className="relative max-w-sm mx-auto">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-2xl">₹</span>
                     <input 
                       type="number" 
                       value={amountReceived} 
                       onChange={e => setAmountReceived(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold text-[#253C6D] focus:ring-2 focus:ring-[#30497D] outline-none transition-shadow"
+                      className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-3xl font-black text-[#253C6D] text-center focus:border-[#253C6D] focus:ring-0 outline-none transition-colors"
                     />
                   </div>
-                </div>
-              
-              {Number(amountReceived) > bill.balanceAmount && (
-                <div className="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 flex justify-between items-center">
-                  <span className="text-sm font-bold text-green-700">Change to Return:</span>
-                  <span className="text-xl font-bold text-green-700">₹{(Number(amountReceived) - bill.balanceAmount).toLocaleString('en-IN')}</span>
-                </div>
-              )}
+               </div>
+
+               <div className="flex justify-center gap-2 flex-wrap">
+                  {[500, 1000, 2000, 5000, 10000].map(amt => (
+                    <button key={amt} onClick={() => handleQuickAmount(amt)} className="px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200 transition-colors">
+                      ₹{amt.toLocaleString('en-IN')}
+                    </button>
+                  ))}
+               </div>
+               
+               {changeReturned > 0 && (
+                 <div className="bg-orange-50 text-orange-600 border border-orange-200 p-4 rounded-xl text-center flex flex-col items-center justify-center animate-pulse">
+                   <span className="text-xs font-bold uppercase tracking-widest">Change Due</span>
+                   <span className="text-3xl font-black">₹{changeReturned.toLocaleString('en-IN')}</span>
+                 </div>
+               )}
+
+               <div className="pt-4 border-t border-gray-100">
+                  <button onClick={() => setShowDenominations(!showDenominations)} className="w-full py-3 flex items-center justify-center gap-2 text-[#455B8A] font-bold bg-blue-50/50 hover:bg-blue-50 rounded-xl transition-colors">
+                     {showDenominations ? 'Hide Cash Denomination ▴' : 'Show Cash Denomination ▾'}
+                  </button>
+                  
+                  {showDenominations && (
+                    <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                       <CashDenominationCounter 
+                          denominationCounts={denominationCounts}
+                          onCountChange={(key, val) => setDenominationCounts(prev => ({...prev, [key]: val}))}
+                          enteredAmount={amountReceived}
+                       />
+                    </div>
+                  )}
+               </div>
             </div>
-            )}
-          </div>
 
+          ) : (
+            
+            // QR / UPI MODE
+            <div className="flex flex-col items-center justify-center text-center space-y-6">
+                <div>
+                   <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Payment Amount</p>
+                   <p className="text-5xl font-black text-[#253C6D]">₹{amountToPay.toLocaleString('en-IN')}</p>
+                </div>
+                
+                {settings?.dynamicQrProvider === 'Razorpay' ? (
+                   loading ? (
+                     <div className="h-64 flex items-center justify-center"><p className="font-bold text-gray-500 animate-pulse">Generating Dynamic QR...</p></div>
+                  ) : dynamicQrData ? (
+                     <>
+                       <div className="p-4 bg-white border-2 border-gray-200 rounded-2xl shadow-sm inline-block">
+                         <img src={dynamicQrData.qrImage} alt="Dynamic UPI QR" className="w-64 h-64 object-contain" />
+                       </div>
+                       <p className="font-bold text-gray-500">Scan using GPay / PhonePe / Paytm / any supported UPI app</p>
+                       <div className="flex items-center gap-2 text-orange-500 mt-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-200 font-bold animate-pulse">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          WAITING FOR PAYMENT
+                       </div>
+                     </>
+                  ) : (
+                    <div className="p-6 bg-red-50 border border-red-200 rounded-xl max-w-sm">
+                      <p className="font-bold text-red-800">Dynamic QR Error</p>
+                      <button onClick={generateDynamicQR} className="mt-4 px-6 py-2 bg-red-100 text-red-800 rounded-lg font-bold hover:bg-red-200 transition-colors">Retry Generate QR</button>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    {upiId ? (
+                      <div className="p-4 bg-white border-2 border-gray-200 rounded-2xl shadow-sm inline-block">
+                        <QRCodeSVG value={upiUri} size={256} />
+                      </div>
+                    ) : settings?.staticQrImage ? (
+                      <div className="p-4 bg-white border-2 border-gray-200 rounded-2xl shadow-sm inline-block">
+                         <img src={settings.staticQrImage} alt="UPI QR" className="w-64 h-64 object-contain" />
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-orange-50 border border-orange-200 rounded-xl max-w-sm">
+                        <p className="text-orange-800 font-bold">No QR Code Configured</p>
+                      </div>
+                    )}
+                    <p className="font-bold text-gray-500">Scan using GPay / PhonePe / Paytm / any supported UPI app</p>
+                    <div className="flex gap-4 w-full max-w-md mx-auto pt-4">
+                        <button onClick={() => handleRecordPayment('Pending')} disabled={loading || success} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50">
+                           Mark Pending
+                        </button>
+                        <button onClick={() => handleRecordPayment('Verified')} disabled={loading || success} className="flex-1 py-3 bg-green-100 text-green-700 font-bold rounded-xl hover:bg-green-200 transition-colors disabled:opacity-50">
+                           Confirm Verified
+                        </button>
+                    </div>
+                  </>
+                )}
+            </div>
+
+          )}
         </div>
-
-        {/* Right Side: Cash Denomination Counter */}
-        {paymentMethod === 'Cash' && (
-          <div className="md:w-1/3">
-            <CashDenominationCounter 
-              denominationCounts={denominationCounts}
-              onCountChange={(key, val) => setDenominationCounts(prev => ({...prev, [key]: val}))}
-              enteredAmount={amountReceived}
-            />
-          </div>
-        )}
 
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
-        <div className="max-w-4xl mx-auto flex gap-3">
+      {/* ACTION AREA */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-20">
+        <div className="max-w-5xl mx-auto flex gap-4">
           <button 
-            onClick={handleSkipPayment}
-            className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors"
+            onClick={onCancel}
+            disabled={loading || success}
+            className="w-1/3 py-5 bg-gray-100 text-gray-600 rounded-xl font-black text-xl hover:bg-gray-200 transition-colors disabled:opacity-50 tracking-wide"
           >
-            Skip / Pay Later
+            CANCEL / PAY LATER
           </button>
           
-          {paymentMethod === 'Cash' && (
-            <button 
-              onClick={() => handleRecordPayment('Paid')}
-              disabled={loading || success}
-              className="flex-[2] py-4 bg-[#253C6D] text-white rounded-xl font-bold text-lg shadow-md hover:bg-[#30497D] transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Verifying...' : 'Confirm Receipt & Print'}
-            </button>
-          )}
+          <button 
+            onClick={() => handleRecordPayment('Paid')}
+            disabled={loading || success || paymentMethod !== 'Cash'}
+            className="w-2/3 py-5 bg-[#253C6D] text-white rounded-xl font-black text-xl shadow-lg shadow-blue-900/20 hover:bg-[#30497D] transition-colors disabled:opacity-50 disabled:shadow-none tracking-wide flex justify-center items-center gap-3"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                 <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                 PROCESSING...
+              </span>
+            ) : (
+               'CONFIRM PAYMENT & PRINT'
+            )}
+          </button>
         </div>
       </div>
     </div>
