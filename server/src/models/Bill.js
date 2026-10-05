@@ -40,7 +40,11 @@ const billSchema = new mongoose.Schema({
   notes: { type: String },
   terms: { type: String },
   publicToken: { type: String },
-  pdfUrl: { type: String }
+  pdfUrl: { type: String },
+  denominationCounts: { type: Object },
+  countedCashAmount: { type: Number },
+  enteredCashAmount: { type: Number },
+  cashDifference: { type: Number }
 }, { timestamps: true });
 
 billSchema.index({ userId: 1 });

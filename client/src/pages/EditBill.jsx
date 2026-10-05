@@ -3,10 +3,10 @@ import API from '../services/api';
 import { I18nContext } from '../layouts/MainLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { downloadBillPdf } from '../services/billService';
-import { generateHTML } from '../utils/billTemplate';
 import TamilTransliterationInput from '../components/TamilTransliterationInput';
 import { transliterateText } from '../utils/tamilTransliteration';
 import { printBill } from '../utils/printUtils';
+import CashDenominationCounter from '../components/CashDenominationCounter';
 
 const EditBillSkeleton = () => (
   <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-pulse">
@@ -34,10 +34,13 @@ const EditBill = () => {
   const [eventTypesLoading, setEventTypesLoading] = useState(true);
   const [eventTypesError, setEventTypesError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [previewHtml, setPreviewHtml] = useState('');
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+  };
+
+  const isCashItem = (service) => {
+    return service === 'Cash' || service === 'பண மொய்' || service === 'Cash Contribution';
   };
 
   useEffect(() => {
@@ -47,6 +50,7 @@ const EditBill = () => {
         ...data,
         items: data.items || [],
         eventDate: data.eventDate ? new Date(data.eventDate).toISOString().slice(0,10) : new Date().toISOString().slice(0,10),
+        denominationCounts: data.denominationCounts || {}
       });
     }).catch(err => alert(err.response?.data?.message || err.message || 'Error fetching bill'));
 
@@ -63,7 +67,7 @@ const EditBill = () => {
   }, [id]);
 
   const addItem = () => {
-    setFormData(prev => ({...prev, items: [...(prev.items || []), { service: '', quantity: 1, rate: 0 }]}));
+    setFormData(prev => ({...prev, items: [...(prev.items || []), { service: 'Cash Contribution', quantity: 1, rate: 0, amount: '' }]}));
   };
 
   const updateItem = (index, field, value) => {
@@ -72,27 +76,42 @@ const EditBill = () => {
     setFormData(prev => ({...prev, items: newItems}));
   };
 
+  const handleQuickAmount = (index, amount) => {
+    const newItems = [...(formData.items || [])];
+    const currentAmt = Number(newItems[index].amount) || 0;
+    newItems[index].amount = currentAmt + amount;
+    setFormData(prev => ({...prev, items: newItems}));
+  };
+
   const removeItem = (index) => {
     const newItems = (formData.items || []).filter((_, i) => i !== index);
     setFormData(prev => ({...prev, items: newItems}));
   };
 
-  const subtotal = formData?.items?.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.rate)), 0) || 0;
+  const handleDenominationChange = (key, value) => {
+    setFormData(prev => ({
+      ...prev,
+      denominationCounts: {
+        ...(prev.denominationCounts || {}),
+        [key]: value
+      }
+    }));
+  };
+
+  const subtotal = formData?.items?.reduce((acc, item) => {
+    if (isCashItem(item.service)) {
+      return acc + (Number(item.amount) || 0);
+    }
+    return acc + (Number(item.quantity) * Number(item.rate));
+  }, 0) || 0;
+  
   const balance = subtotal - Number(formData?.advancePaid || 0);
 
-  useEffect(() => {
-    if (!formData) return;
-    const previewBill = {
-      ...formData,
-      subtotal: subtotal,
-      balanceAmount: balance,
-      totalAmount: subtotal,
-      totalPaid: Number(formData.advancePaid || 0),
-      items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
-      paymentStatus: balance <= 0 ? 'Paid' : (formData.advancePaid > 0 ? 'Partially Paid' : 'Pending')
-    };
-    setPreviewHtml(generateHTML(previewBill));
-  }, [formData, subtotal, balance]);
+  const hasCashItems = formData?.items?.some(item => isCashItem(item.service)) || false;
+  const enteredCashAmount = formData?.items?.reduce((acc, item) => {
+    if (isCashItem(item.service)) return acc + (Number(item.amount) || 0);
+    return acc;
+  }, 0) || 0;
 
   // Transliterate 'otherEventType'
   useEffect(() => {
@@ -113,7 +132,13 @@ const EditBill = () => {
       balanceAmount: balance,
       totalAmount: subtotal,
       totalPaid: Number(formData.advancePaid || 0),
-      items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) })),
+      items: (formData.items || []).map(i => {
+        if (isCashItem(i.service)) {
+          const amt = Number(i.amount) || (Number(i.quantity) * Number(i.rate)) || 0;
+          return { service: 'Cash Contribution', quantity: 1, rate: amt, amount: amt };
+        }
+        return { ...i, amount: Number(i.quantity) * Number(i.rate) };
+      }),
       paymentStatus: balance <= 0 ? 'Paid' : (formData.advancePaid > 0 ? 'Partially Paid' : 'Pending')
     };
     await printBill(previewBill);
@@ -123,9 +148,26 @@ const EditBill = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      let countedCashAmount = 0;
+      if (hasCashItems && formData.denominationCounts) {
+        const denoms = { '500': 500, '200': 200, '100': 100, '50': 50, '20': 20, '10': 10, 'coins': 1 };
+        countedCashAmount = Object.entries(formData.denominationCounts).reduce((sum, [key, count]) => {
+          return sum + ((denoms[key] || 0) * (count || 0));
+        }, 0);
+      }
+
       const dataToSubmit = {
         ...formData,
-        items: (formData.items || []).map(i => ({ ...i, amount: Number(i.quantity) * Number(i.rate) }))
+        countedCashAmount: hasCashItems ? countedCashAmount : 0,
+        enteredCashAmount: hasCashItems ? enteredCashAmount : 0,
+        cashDifference: hasCashItems ? (countedCashAmount - enteredCashAmount) : 0,
+        items: (formData.items || []).map(i => {
+          if (isCashItem(i.service)) {
+            const amt = Number(i.amount) || (Number(i.quantity) * Number(i.rate)) || 0;
+            return { service: 'Cash Contribution', quantity: 1, rate: amt, amount: amt };
+          }
+          return { ...i, amount: Number(i.quantity) * Number(i.rate) };
+        })
       };
       if (dataToSubmit.eventType === 'Other') {
         dataToSubmit.eventTypeNameEn = dataToSubmit.otherEventType;
@@ -164,7 +206,7 @@ const EditBill = () => {
       <div className="flex flex-col xl:flex-row gap-8">
         
         {/* Form Section */}
-        <div className="w-full xl:w-2/3">
+        <div className={`w-full ${hasCashItems ? 'xl:w-2/3' : 'xl:w-full'}`}>
           <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 shadow-sm rounded-xl border border-gray-100 border-t-4 border-t-[#253C6D] space-y-8">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -246,47 +288,70 @@ const EditBill = () => {
                 <option value="மற்றவை" />
               </datalist>
               
-              <div className="hidden sm:flex space-x-3 mb-2 text-xs font-bold text-[#455B8A] uppercase tracking-wider px-2">
-                <div className="flex-1">{t('Item', 'பொருள்')}</div>
-                <div className="w-24 text-center">{t('Qty')}</div>
-                <div className="w-32 text-center">{t('Rate')}</div>
-                <div className="w-32 text-right">{t('Amount')}</div>
-                <div className="w-10"></div>
-              </div>
-              
-              {(formData.items || []).map((item, index) => (
-                <div key={index} className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-2 items-center bg-gray-50 p-4 sm:bg-transparent sm:p-0 rounded-lg sm:rounded-none border sm:border-none border-gray-200">
-                  <div className="w-full sm:flex-1">
-                    <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Item', 'பொருள்')}</label>
-                    <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets-edit" placeholder={t('Item', 'பொருள்') + " (e.g. Cash Contribution)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white sm:bg-gray-50 text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
+              {(formData.items || []).map((item, index) => {
+                const isCash = isCashItem(item.service);
+                return (
+                <div key={index} className="flex flex-col gap-3 mb-4 items-start bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex flex-col sm:flex-row w-full gap-3 items-start sm:items-center">
+                    <div className="w-full sm:flex-1">
+                      <label className="block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Contribution Type', 'பங்களிப்பு வகை')}</label>
+                      <TamilTransliterationInput language={formData.billLanguage} type="text" list="service-presets-edit" placeholder={t('Item', 'பொருள்') + " (e.g. Cash Contribution)"} required className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none bg-white text-sm" value={item.service} onChange={e=>updateItem(index, 'service', e.target.value)} />
+                    </div>
+                    
+                    {!isCash ? (
+                    <div className="flex w-full sm:w-auto gap-3">
+                      <div className="w-full sm:w-24">
+                        <label className="block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Qty')}</label>
+                        <input type="number" placeholder={t('Qty')} required min="1" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none text-center bg-white text-sm" value={item.quantity} onChange={e=>updateItem(index, 'quantity', e.target.value)} />
+                      </div>
+                      <div className="w-full sm:w-32">
+                        <label className="block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Rate')}</label>
+                        <input type="number" placeholder={t('Rate')} required min="0" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none text-right bg-white text-sm" value={item.rate} onChange={e=>updateItem(index, 'rate', e.target.value)} />
+                      </div>
+                      <div className="w-full sm:w-32 flex flex-col">
+                        <label className="block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Amount')}</label>
+                        <span className="w-full p-2.5 bg-gray-100 rounded-lg text-right font-bold text-[#253C6D] text-sm h-full flex items-center justify-end">
+                          {formatCurrency(Number(item.quantity) * Number(item.rate))}
+                        </span>
+                      </div>
+                    </div>
+                    ) : (
+                      <div className="flex w-full sm:w-auto gap-3 flex-col sm:flex-row">
+                        <div className="w-full sm:w-48">
+                           <label className="block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Cash Amount')}</label>
+                           <input type="number" placeholder={t('Amount')} required min="0" className="w-full p-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none font-bold text-[#253C6D] text-lg" value={item.amount || (item.quantity * item.rate) || ''} onChange={e=>updateItem(index, 'amount', e.target.value)} />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {index > 0 && (
+                      <div className="self-end mb-1">
+                        <button type="button" onClick={()=>removeItem(index)} className="w-10 text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg transition-colors flex justify-center items-center h-10" title="Remove item">✕</button>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="flex w-full sm:w-auto gap-3">
-                    <div className="w-full sm:w-24">
-                      <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Qty')}</label>
-                      <input type="number" placeholder={t('Qty')} required min="1" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none text-center bg-white sm:bg-gray-50 text-sm" value={item.quantity} onChange={e=>updateItem(index, 'quantity', e.target.value)} />
+                  {isCash && (
+                    <div className="w-full mt-2 pt-2 border-t border-gray-200">
+                      <div className="text-xs text-gray-500 font-semibold mb-2">Quick Amount:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {[500, 1000, 2000, 5000, 10000].map(amt => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => handleQuickAmount(index, amt)}
+                            className="bg-white border border-gray-200 text-[#455B8A] px-3 py-1.5 rounded hover:bg-gray-100 hover:text-[#253C6D] transition-colors text-sm font-medium shadow-sm"
+                          >
+                            +₹{amt}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="w-full sm:w-32">
-                      <label className="sm:hidden block text-xs font-bold text-[#455B8A] uppercase tracking-wider mb-1">{t('Rate')}</label>
-                      <input type="number" placeholder={t('Rate')} required min="0" className="w-full border border-gray-200 p-2.5 rounded-lg focus:ring-2 focus:ring-[#30497D] outline-none text-right bg-white sm:bg-gray-50 text-sm" value={item.rate} onChange={e=>updateItem(index, 'rate', e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end mt-2 sm:mt-0">
-                    <span className="sm:hidden text-sm font-bold text-gray-500 uppercase tracking-wider">{t('Amount')}:</span>
-                    <span className="w-full sm:w-32 p-2.5 bg-gray-100 sm:bg-gray-50 rounded-lg text-right font-bold text-[#253C6D] text-sm">
-                      {formatCurrency(Number(item.quantity) * Number(item.rate))}
-                    </span>
-                  </div>
-                  
-                  {index > 0 ? (
-                    <button type="button" onClick={()=>removeItem(index)} className="w-full sm:w-10 text-red-500 font-bold p-2 hover:bg-red-50 rounded-lg transition-colors flex justify-center items-center h-10 mt-2 sm:mt-0" title="Remove item">✕</button>
-                  ) : (
-                    <div className="hidden sm:block w-10"></div>
                   )}
                 </div>
-              ))}
-              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Item', 'மற்றொரு பொருளைச் சேர்')}</button>
+                );
+              })}
+              <button type="button" onClick={addItem} className="text-[#F2842F] font-bold mt-2 hover:bg-orange-50 px-4 py-2 rounded-lg transition-colors inline-flex items-center text-sm">+ {t('Add Another Contribution', 'மற்றொரு பொருளைச் சேர்')}</button>
             </div>
 
             {/* Payment & Language */}
@@ -319,28 +384,16 @@ const EditBill = () => {
           </form>
         </div>
 
-        {/* Live Preview Section */}
-        <div className="w-full xl:w-1/3 flex flex-col xl:h-auto">
-          <div className="bg-gray-200 p-4 rounded-t-xl flex justify-between items-center border border-gray-300 border-b-0">
-            <h3 className="font-bold text-[#253C6D] text-sm tracking-wider uppercase flex items-center gap-2">
-              <span className="bg-[#253C6D] text-white w-4 h-4 rounded-full flex justify-center items-center text-[10px]">👁</span>
-              Live Preview
-            </h3>
-            <span className="text-xs text-gray-500 font-mono">80mm Thermal</span>
+        {/* Cash Denomination Counter Section */}
+        {hasCashItems && (
+          <div className="w-full xl:w-1/3">
+            <CashDenominationCounter 
+              denominationCounts={formData.denominationCounts || {}} 
+              onCountChange={handleDenominationChange} 
+              enteredAmount={enteredCashAmount} 
+            />
           </div>
-          <div className="bg-[#e5e7eb] p-6 flex-1 rounded-b-xl border border-gray-300 flex justify-center overflow-auto items-start min-h-[500px]">
-            <div className="shadow-lg">
-               <style>
-                {`
-                  .preview-wrapper { width: 80mm; background: white; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); transform-origin: top center; }
-                  @media (max-width: 640px) { .preview-wrapper { transform: scale(0.9); } }
-                `}
-              </style>
-              <div className="preview-wrapper" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-            </div>
-          </div>
-        </div>
-
+        )}
       </div>
     </div>
   );
