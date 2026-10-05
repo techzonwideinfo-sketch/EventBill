@@ -336,13 +336,7 @@ const EventBillHistoryReportContent = () => {
               <div>Page {pageNum} Paid Total: {formatCurrency(pagePaidTotal)}</div>
             </div>
 
-            {isLastPage && (
-              <div className="grand-summary">
-                <div>GRAND TOTAL - ENTIRE REPORT</div>
-                <div>Total Bills: {totalBills}</div>
-                <div>Total Amount Paid: {formatCurrency(totalPaid)}</div>
-              </div>
-            )}
+
 
             <div className="page-footer">
               Page {pageNum} of {totalPages}
