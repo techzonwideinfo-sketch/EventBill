@@ -290,12 +290,6 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
         <span>₹${fmt(bill.totalAmount)}</span>
       </div>
 
-      ${bill.totalPaid > 0 ? `
-      <div class="fin-payment" style="color: #15803d; margin-top: 1.5mm;">
-        <span>${t('TOTAL PAID', 'செலுத்திய தொகை')}</span>
-        <span>₹${fmt(bill.totalPaid)}</span>
-      </div>
-      ` : ''}
 
       ${bill.balanceAmount > 0 ? `
       <div class="fin-balance" style="margin-top: 1.5mm;">

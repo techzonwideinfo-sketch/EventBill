@@ -45,8 +45,8 @@ const Receipt = () => {
       }
       
       const messageText = isTamil 
-        ? `வணக்கம் ${safeCustomerName},\n\nஉங்கள் பில் விவரங்கள்:\nநிகழ்வு: ${eventName}\nமொத்த தொகை: ₹${bill.totalAmount || 0}\nசெலுத்திய தொகை: ₹${bill.totalPaid || 0}\nபாக்கி: ₹${bill.balanceAmount || 0}\n\nநன்றி!`
-        : `Hello ${safeCustomerName},\n\nYour bill details:\nEvent: ${eventName}\nTotal Amount: ₹${bill.totalAmount || 0}\nAmount Paid: ₹${bill.totalPaid || 0}\nOutstanding Balance: ₹${bill.balanceAmount || 0}\n\nThank you!\n- EVENTBILL`;
+        ? `வணக்கம் ${safeCustomerName},\n\nஉங்கள் பில் விவரங்கள்:\nநிகழ்வு: ${eventName}\nமொத்த தொகை: ₹${bill.totalAmount || 0}\nபாக்கி: ₹${bill.balanceAmount || 0}\n\nநன்றி!`
+        : `Hello ${safeCustomerName},\n\nYour bill details:\nEvent: ${eventName}\nTotal Amount: ₹${bill.totalAmount || 0}\nOutstanding Balance: ₹${bill.balanceAmount || 0}\n\nThank you!\n- EVENTBILL`;
       
       let phone = bill.customerSnapshot?.phone || (bill.customerId && bill.customerId.phone) || '';
       
@@ -120,8 +120,7 @@ const Receipt = () => {
           <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
         </div>
         
-        <h2 className="text-3xl font-black text-gray-900 mb-1 uppercase tracking-tight">Payment Successful</h2>
-        <p className="text-green-600 font-black text-2xl mb-8 tracking-wider">{formatCurrency(bill.totalPaid)} PAID</p>
+        <h2 className="text-3xl font-black text-gray-900 mb-8 uppercase tracking-tight">Payment Successful</h2>
         
         <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left space-y-4 border border-gray-200">
           <div>
