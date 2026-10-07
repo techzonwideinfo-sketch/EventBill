@@ -95,7 +95,7 @@ const PaymentScreen = ({ bill, onComplete, onCancel }) => {
         amount: paymentAmount,
         amountReceived: amountReceivedNum,
         changeReturned,
-        method: paymentMethod === 'QR' ? 'UPI' : 'Cash',
+        method: paymentMethod === 'QR' ? (settings?.dynamicQrProvider === 'Razorpay' ? 'DynamicQR' : 'StaticQR') : 'Cash',
         reference: reference,
         status: status
       };

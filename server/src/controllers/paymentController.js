@@ -7,28 +7,55 @@ import User from '../models/User.js';
 export const recordPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, method, reference, amountReceived, changeReturned } = req.body;
+    const { amount, method, reference, amountReceived, changeReturned, status: reqStatus } = req.body;
 
     const bill = await Bill.findOne({ _id: id, userId: req.user.id });
     if (!bill) {
       return res.status(404).json({ success: false, message: 'Bill not found' });
     }
 
+    if (bill.paymentStatus === 'Paid') {
+      return res.status(200).json({
+        success: true,
+        alreadyPaid: true,
+        message: 'Payment has already been verified.',
+        data: { bill }
+      });
+    }
+
     if (!amount || amount <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid payment amount' });
     }
 
-    // Manual reconciliation assumes verification by the merchant directly for Cash/StaticQR
-    const status = (method === 'Cash' || method === 'StaticQR' || method === 'Other') ? 'Verified' : 'Pending';
+    // Status can be provided by frontend, fallback to default logic if not
+    let status = reqStatus || ((method === 'Cash' || method === 'StaticQR' || method === 'Other') ? 'Verified' : 'Pending');
+    if (status === 'Paid') status = 'Verified';
 
-    const payment = await Payment.create({
-      userId: req.user.id,
+    // Idempotency: find existing pending payment for this bill
+    let payment = await Payment.findOne({
       billId: bill._id,
-      amount: Number(amount),
-      method,
-      reference,
-      status
+      userId: req.user.id,
+      status: 'Pending'
     });
+
+    if (payment) {
+      // Update existing pending payment
+      payment.method = method;
+      payment.status = status;
+      payment.amount = Number(amount);
+      if (reference) payment.reference = reference;
+      await payment.save();
+    } else {
+      // Create new payment
+      payment = await Payment.create({
+        userId: req.user.id,
+        billId: bill._id,
+        amount: Number(amount),
+        method,
+        reference,
+        status
+      });
+    }
 
     if (status === 'Verified') {
       bill.totalPaid += Number(amount);
@@ -59,7 +86,7 @@ export const recordPayment = async (req, res) => {
 
   } catch (err) {
     console.error('Record Payment Error:', err);
-    res.status(500).json({ success: false, message: 'Server error while recording payment' });
+    res.status(500).json({ success: false, message: 'Server error while recording payment', error: err.message });
   }
 };
 
