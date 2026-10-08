@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.eventbill.app",
-    "productName": "EventBill",
+    "productName": "MOI BILL",
     "directories": {
       "output": "dist-electron"
     },
@@ -26,7 +26,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "shortcutName": "EventBill"
+      "shortcutName": "MOI BILL"
     },
     "files": [
       "dist/**/*",

@@ -136,7 +136,7 @@ export const forgotPassword = async (req, res) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: 'EventBill Password Reset',
+        subject: 'MOI BILL Password Reset',
         message
       });
 

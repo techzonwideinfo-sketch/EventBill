@@ -75,7 +75,7 @@ const Dashboard = () => {
             <span className="text-2xl">📄</span>
           </div>
           <h2 className="text-xl text-[#253C6D] font-bold mb-2">No bills created yet</h2>
-          <p className="text-[#455B8A] mb-6">Create your first event bill to get started.</p>
+          <p className="text-[#455B8A] mb-6">Create your first MOI BILL to get started.</p>
           <Link to="/select-event" className="inline-block bg-[#F2842F] text-white px-6 py-2.5 rounded-lg shadow-sm font-semibold hover:bg-orange-500 transition-colors">
             + {t('Create MOI Bill')}
           </Link>

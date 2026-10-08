@@ -202,7 +202,7 @@ const Settings = () => {
             <button 
               type="button" 
               onClick={async () => {
-                const testHtml = `<html><head><style>@page { size: ${receiptWidth} auto; margin: 0; } body { width: ${receiptWidth}; font-family: monospace; text-align: center; padding: 10px; margin: 0; }</style></head><body><h3>EventBill Test Print</h3><p>Width: ${receiptWidth}</p><p>Printer is working!</p><p>Tamil: வணக்கம்</p></body></html>`;
+                const testHtml = `<html><head><style>@page { size: ${receiptWidth} auto; margin: 0; } body { width: ${receiptWidth}; font-family: monospace; text-align: center; padding: 10px; margin: 0; }</style></head><body><h3>MOI BILL Test Print</h3><p>Width: ${receiptWidth}</p><p>Printer is working!</p><p>Tamil: வணக்கம்</p></body></html>`;
                 if (window.electronAPI && window.electronAPI.printHtml) {
                   const printRes = await window.electronAPI.printHtml(testHtml);
                   if (printRes.success) {

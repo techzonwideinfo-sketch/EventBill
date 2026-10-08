@@ -25,7 +25,7 @@ const generateFrontendPdf = async (billId) => {
   
   const opt = {
     margin:       0,
-    filename:     `EventBill-${bill.billNumber}.pdf`,
+    filename:     `MOI-BILL-${bill.billNumber}.pdf`,
     image:        { type: 'jpeg', quality: 1 },
     html2canvas:  { scale: 2, useCORS: true, logging: false },
     jsPDF:        { unit: 'mm', format: width === '80mm' ? [80, 200] : 'a4', orientation: 'portrait' }
@@ -51,7 +51,7 @@ export const downloadBillPdf = async (billId, fallbackBillNumber = 'Bill') => {
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `EventBill-${billNumber || fallbackBillNumber}.pdf`;
+    link.download = `MOI-BILL-${billNumber || fallbackBillNumber}.pdf`;
     
     document.body.appendChild(link);
     link.click();

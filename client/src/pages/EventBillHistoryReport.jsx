@@ -162,7 +162,7 @@ const EventBillHistoryReportContent = () => {
       </div>
       <div className="report-container">
         <div className="report-header">
-          <h1 className="report-title">E-MOI Event Bill History Report</h1>
+          <h1 className="report-title">E-MOI BILL History Report</h1>
         </div>
         {content}
       </div>
@@ -266,7 +266,7 @@ const EventBillHistoryReportContent = () => {
         return (
           <div key={'page-' + pageNum} className="page-wrapper">
             <div className="report-header">
-              <h1 className="report-title">E-MOI Event Bill History Report</h1>
+              <h1 className="report-title">E-MOI BILL History Report</h1>
               <div className="report-meta">
                 <div>
                   <strong>Event:</strong> {eventName || 'All Events'} <br/>

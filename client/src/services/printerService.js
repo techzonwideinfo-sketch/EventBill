@@ -1,6 +1,6 @@
 /**
  * Printer Service
- * A hardware-independent printing abstraction for EventBill.
+ * A hardware-independent printing abstraction for MOI BILL.
  */
 
 export const printReceipt = async (htmlContent, billId) => {

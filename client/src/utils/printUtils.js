@@ -68,7 +68,7 @@ export const printA4Report = async (htmlContent) => {
     <html>
       <head>
         <meta charset="utf-8" />
-        <title>Event Bill History Report</title>
+        <title>MOI BILL History Report</title>
         <style>
           ${eventHistoryCss}
         </style>

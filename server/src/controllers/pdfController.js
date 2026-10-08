@@ -13,7 +13,7 @@ export const getPdf = async (req, res) => {
     const pdfBuffer = await generatePdfBuffer(bill);
 
     const safeCustomerName = bill.customerSnapshot?.name ? bill.customerSnapshot.name.replace(/[^a-z0-9]/gi, '_') : 'Customer';
-    const filename = `EventBill-${bill.billNumber}-${safeCustomerName}.pdf`;
+    const filename = `MOI-BILL-${bill.billNumber}-${safeCustomerName}.pdf`;
 
     res.set({
       'Content-Type': 'application/pdf',

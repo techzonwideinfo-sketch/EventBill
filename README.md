@@ -1,4 +1,4 @@
-# Event Bill Management System
+# MOI BILL Management System
 
 A production-ready bilingual (English & Tamil) billing application for event management businesses.
 

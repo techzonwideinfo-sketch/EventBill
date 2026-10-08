@@ -48,7 +48,7 @@ EventBill-ஐ தேர்வு செய்ததற்கு நன்றி.
 
   return `Hello ${safeCustomerName},
 
-Thank you for choosing EventBill.
+Thank you for choosing MOI BILL.
 
 Your bill details:
 

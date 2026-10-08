@@ -9,23 +9,23 @@ function RouteTitle() {
   React.useEffect(() => {
     const path = location.pathname;
     if (path.includes('login') || path.includes('register')) {
-      document.title = 'EventBill';
+      document.title = 'MOI BILL';
     } else if (path === '/' || path === '/dashboard') {
-      document.title = 'EventBill | Dashboard';
+      document.title = 'MOI BILL | Dashboard';
     } else if (path.includes('create-bill')) {
-      document.title = 'EventBill | Create Bill';
+      document.title = 'MOI BILL | Create Bill';
     } else if (path.includes('edit')) {
-      document.title = 'EventBill | Edit Bill';
+      document.title = 'MOI BILL | Edit Bill';
     } else if (path.includes('bills') && !path.includes('print')) {
-      document.title = 'EventBill | Bill History';
+      document.title = 'MOI BILL | Bill History';
     } else if (path.includes('customers')) {
-      document.title = 'EventBill | Customers';
+      document.title = 'MOI BILL | Customers';
     } else if (path.includes('event-types')) {
-      document.title = 'EventBill | Event Types';
+      document.title = 'MOI BILL | Event Types';
     } else if (path.includes('settings')) {
-      document.title = 'EventBill | Settings';
+      document.title = 'MOI BILL | Settings';
     } else {
-      document.title = 'EventBill';
+      document.title = 'MOI BILL';
     }
   }, [location]);
   return null;

@@ -10,6 +10,7 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    title: 'MOI BILL',
     width: 1200,
     height: 800,
     icon: path.join(__dirname, '../assets/icon.png'),

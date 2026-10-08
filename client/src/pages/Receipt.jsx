@@ -46,7 +46,7 @@ const Receipt = () => {
       
       const messageText = isTamil 
         ? `வணக்கம் ${safeCustomerName},\n\nஉங்கள் பில் விவரங்கள்:\nநிகழ்வு: ${eventName}\nமொத்த தொகை: ₹${bill.totalAmount || 0}\nபாக்கி: ₹${bill.balanceAmount || 0}\n\nநன்றி!`
-        : `Hello ${safeCustomerName},\n\nYour bill details:\nEvent: ${eventName}\nTotal Amount: ₹${bill.totalAmount || 0}\nOutstanding Balance: ₹${bill.balanceAmount || 0}\n\nThank you!\n- EVENTBILL`;
+        : `Hello ${safeCustomerName},\n\nYour bill details:\nEvent: ${eventName}\nTotal Amount: ₹${bill.totalAmount || 0}\nOutstanding Balance: ₹${bill.balanceAmount || 0}\n\nThank you!\n- MOI BILL`;
       
       let phone = bill.customerSnapshot?.phone || (bill.customerId && bill.customerId.phone) || '';
       
