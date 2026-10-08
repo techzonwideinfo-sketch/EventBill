@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const ROWS_PER_PAGE = 12;
+const ROWS_PER_PAGE = 28;
 
 const EventBillHistoryReportContent = () => {
   const [bills, setBills] = useState([]);
@@ -185,12 +185,13 @@ const EventBillHistoryReportContent = () => {
             margin: 20px auto;
             background: white;
             box-sizing: border-box;
-            padding: 15mm;
+            padding: 10mm 15mm;
             border: 1px solid #ddd;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             page-break-after: always;
             break-after: page;
-            display: block;
+            display: flex; 
+            flex-direction: column;
           }
           .page-wrapper:last-child {
             page-break-after: auto;
@@ -198,20 +199,22 @@ const EventBillHistoryReportContent = () => {
           }
           
           /* Typography for Print */
-          .report-header { text-align: center; margin-bottom: 12px; }
+          .report-header { text-align: center; margin-bottom: 8px; flex-shrink: 0; }
           .brand-title { font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #555; margin: 0; }
-          .report-title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 2px 0 8px 0; }
-          .report-meta { display: flex; justify-content: space-between; font-size: 10px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+          .report-title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 2px 0 6px 0; }
+          .report-meta { display: flex; justify-content: space-between; font-size: 10px; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
           
           /* Table Styles */
-          .report-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 12px; table-layout: fixed; }
+          .table-container { flex-grow: 0; margin-bottom: 10px; }
+          .report-table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
           .report-table th, .report-table td { 
             border: 1px solid #444; 
-            padding: 6px 4px; 
+            padding: 5px 3px; 
             text-align: left; 
             vertical-align: middle; 
             overflow-wrap: anywhere; 
             word-break: break-word; 
+            line-height: 1.1;
           }
           .report-table th { background-color: #f3f4f6; font-weight: bold; text-transform: uppercase; }
           
@@ -221,19 +224,20 @@ const EventBillHistoryReportContent = () => {
           /* Summary and Footer */
           .page-summary { 
             border: 1px solid #000; 
-            padding: 8px 12px; 
+            padding: 6px 10px; 
             display: flex; 
             justify-content: space-between; 
             background-color: #f8f9fa; 
             font-size: 11px; 
             font-weight: bold; 
-            margin-bottom: 15px; 
             border-radius: 2px;
+            flex-shrink: 0;
           }
-          .page-footer { text-align: right; font-size: 9px; color: #333; margin-top: 10px; }
+          .footer-spacer { flex-grow: 1; }
+          .page-footer { text-align: right; font-size: 9px; color: #333; margin-top: auto; padding-top: 10px; flex-shrink: 0; }
           
           /* Badges */
-          .status-badge { display: inline-block; padding: 2px 4px; border-radius: 2px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+          .status-badge { display: inline-block; padding: 2px 3px; border-radius: 2px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
           .status-paid { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
           .status-partial { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
           .status-pending { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
@@ -242,9 +246,10 @@ const EventBillHistoryReportContent = () => {
 
           /* Print Overrides */
           @media print {
-            body { background: white; }
-            .page-wrapper { margin: 0; padding: 0; border: none; box-shadow: none; width: 100%; min-height: auto; }
-            .report-table th, .report-table td { padding: 4px; }
+            @page { size: A4 portrait; margin: 0; }
+            body { background: white; margin: 0; padding: 0; }
+            .page-wrapper { margin: 0; padding: 10mm 10mm; border: none; box-shadow: none; width: 210mm; height: 297mm; min-height: 297mm; }
+            .report-table th, .report-table td { padding: 4px 3px; }
           }
         `}
       </style>
@@ -281,7 +286,8 @@ const EventBillHistoryReportContent = () => {
               </div>
             </div>
 
-            <table className="report-table">
+            <div className="table-container">
+              <table className="report-table">
               <thead>
                 <tr>
                   <th style={{ width: '4%' }} className="text-center">No</th>
@@ -329,12 +335,15 @@ const EventBillHistoryReportContent = () => {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
 
             <div className="page-summary">
               <span>Page {pageNum} Bill Count: {pageBillCount}</span>
               <span>Page {pageNum} Total Paid: {formatCurrency(pagePaidTotal)}</span>
             </div>
+            
+            <div className="footer-spacer"></div>
 
             <div className="page-footer">
               Page {pageNum} of {totalPages}
