@@ -47,7 +47,7 @@ const Register = () => {
           
           <div className="text-center md:text-left mb-[40px]">
             <h2 className="text-[32px] font-bold text-[#253C6D] leading-tight">Create Account</h2>
-            <p className="text-[#455B8A] text-[15px] mt-[8px]">Register to manage your event bills</p>
+            <p className="text-[#455B8A] text-[15px] mt-[8px]">Register to manage your MOI bills</p>
           </div>
 
           {error && (

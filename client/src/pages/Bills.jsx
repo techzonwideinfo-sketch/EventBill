@@ -149,7 +149,7 @@ const Bills = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#253C6D]">{t('Bill History')}</h1>
-          <p className="text-sm text-[#455B8A] mt-1">Manage and track your event bills.</p>
+          <p className="text-sm text-[#455B8A] mt-1">Manage and track your MOI bills.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 

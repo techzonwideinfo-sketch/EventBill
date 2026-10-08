@@ -21,7 +21,7 @@ const sendEmail = async (options) => {
   });
 
   const message = {
-    from: `${process.env.FROM_NAME || 'EventBill'} <${process.env.SMTP_EMAIL}>`,
+    from: `${process.env.FROM_NAME || 'MOI BILL'} <${process.env.SMTP_EMAIL}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,

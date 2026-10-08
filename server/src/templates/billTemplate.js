@@ -204,7 +204,7 @@ export const generateHTML = (bill, fontBase64 = '') => {
       
       <!-- Header -->
       <div class="header">
-        <h1>EVENTBILL</h1>
+        <h1>MOI BILL</h1>
         <div class="event-type-display">${eventName}</div>
       </div>
 

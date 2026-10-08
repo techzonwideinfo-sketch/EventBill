@@ -33,7 +33,7 @@ export const generateFallbackMessage = (bill) => {
   if (isTamil) {
     return `வணக்கம் ${safeCustomerName},
 
-EventBill-ஐ தேர்வு செய்ததற்கு நன்றி.
+MOI BILL-ஐ தேர்வு செய்ததற்கு நன்றி.
 
 உங்கள் பில் விவரங்கள்:
 
