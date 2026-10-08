@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const ROWS_PER_PAGE = 20;
+const ROWS_PER_PAGE = 12;
 
 const EventBillHistoryReportContent = () => {
   const [bills, setBills] = useState([]);
@@ -109,12 +109,10 @@ const EventBillHistoryReportContent = () => {
 
     API.get('/bills', { params })
       .then(res => {
-        // Robust response parsing
         const rawData = res.data?.data || res.data?.bills || res.data || [];
         const finalBills = Array.isArray(rawData) ? rawData : (rawData.docs || []);
         
         if (!Array.isArray(finalBills)) {
-          console.error("API returned non-array data:", res.data);
           setError("Invalid data format received from server.");
           setBills([]);
         } else {
@@ -124,13 +122,12 @@ const EventBillHistoryReportContent = () => {
       })
       .catch(err => {
         console.error(err);
-        setError("Failed to fetch matching bills: " + (err.response?.data?.message || err.message));
+        setError("Failed to fetch matching bills.");
         setLoading(false);
       });
   }, [eventId, eventFilterFallback, statusFilter, dateFilter, customStart, customEnd]);
 
   useEffect(() => {
-    // Only print when data is loaded, there is no error, and the array is truly present.
     if (!loading && !error && Array.isArray(bills) && bills.length > 0) {
       setTimeout(() => {
         window.print();
@@ -138,107 +135,116 @@ const EventBillHistoryReportContent = () => {
     }
   }, [loading, error, bills]);
 
-  const handleClose = () => {
-    window.close();
-  };
+  const handleClose = () => window.close();
 
   const renderShell = (content) => (
     <div>
-      <style>
-        {`
-          body { font-family: Arial, sans-serif; background: white; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .report-container { width: 100%; max-width: 100%; padding: 20px; box-sizing: border-box; }
-          .report-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .report-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; }
-          .no-print { display: none !important; }
-          @media print {
-             .report-container { padding: 0; }
-          }
-        `}
-      </style>
       <div className="no-print" style={{ background: '#f8f9fa', padding: '15px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0, color: '#253C6D' }}>Report Preview</h2>
         <button onClick={handleClose} style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Close</button>
       </div>
-      <div className="report-container">
-        <div className="report-header">
-          <h1 className="report-title">E-MOI BILL History Report</h1>
-        </div>
+      <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
         {content}
       </div>
     </div>
   );
 
-  if (loading) return renderShell(<div style={{ padding: '20px', fontSize: '18px', textAlign: 'center' }}>Preparing report, please wait...</div>);
-  if (error) return renderShell(
-    <div style={{ padding: '20px', color: 'red', textAlign: 'center' }}>
-      <h2>Error Preparing Report</h2>
-      <p>{error}</p>
-      <button onClick={() => window.location.reload()} style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: '#253C6D', color: '#fff', border: 'none', borderRadius: '4px' }}>Retry</button>
-    </div>
-  );
+  if (loading) return renderShell(<div style={{ fontSize: '18px', textAlign: 'center' }}>Preparing report, please wait...</div>);
+  if (error) return renderShell(<div style={{ color: 'red', textAlign: 'center' }}><h2>Error</h2><p>{error}</p></div>);
   
   const safeBills = Array.isArray(bills) ? bills : [];
-  if (safeBills.length === 0) return renderShell(
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h2>No Records Found</h2>
-      <p>No bills match the selected criteria for this report.</p>
-    </div>
-  );
+  if (safeBills.length === 0) return renderShell(<div style={{ textAlign: 'center' }}><h2>No Records Found</h2></div>);
 
   let dateStr = dateFilter || 'All Time';
-  if (dateFilter === 'Custom') {
-    dateStr = customStart + ' to ' + customEnd;
-  }
+  if (dateFilter === 'Custom') dateStr = `${customStart} to ${customEnd}`;
 
-  // Calculate chunks safely
   const pages = [];
   for (let i = 0; i < safeBills.length; i += ROWS_PER_PAGE) {
     pages.push(safeBills.slice(i, i + ROWS_PER_PAGE));
   }
 
-  // Grand totals safely
-  const totalBills = safeBills.length;
-  const totalPaid = safeBills.reduce((sum, b) => {
-    const p = Number(b?.totalPaid);
-    return sum + (isNaN(p) ? 0 : p);
-  }, 0);
-
   return (
     <div>
       <style>
         {`
-          @page { size: A4 landscape; margin: 10mm; }
-          body { font-family: Arial, sans-serif; background: white; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .page-wrapper { width: 100%; box-sizing: border-box; page-break-after: always; padding: 10mm 15mm; min-height: 100vh; display: flex; flex-direction: column; }
-          @media print {
-            .page-wrapper { min-height: auto; height: 100%; padding: 0; }
+          @page { size: A4 portrait; margin: 10mm; }
+          body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            background: #f0f2f5; 
+            margin: 0; 
+            padding: 0; 
+            color: #000; 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
           }
-          .page-wrapper:last-child { page-break-after: auto; }
-          .report-header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 10px; flex-shrink: 0; }
-          .report-title { font-size: 22px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; }
-          .report-meta { display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px; }
-          .report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px; }
-          .report-table th, .report-table td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+          
+          /* Container matching A4 dimensions */
+          .page-wrapper {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            background: white;
+            box-sizing: border-box;
+            padding: 15mm;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            page-break-after: always;
+            break-after: page;
+            display: block;
+          }
+          .page-wrapper:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
+          
+          /* Typography for Print */
+          .report-header { text-align: center; margin-bottom: 12px; }
+          .brand-title { font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #555; margin: 0; }
+          .report-title { font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 2px 0 8px 0; }
+          .report-meta { display: flex; justify-content: space-between; font-size: 10px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+          
+          /* Table Styles */
+          .report-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 12px; table-layout: fixed; }
+          .report-table th, .report-table td { 
+            border: 1px solid #444; 
+            padding: 6px 4px; 
+            text-align: left; 
+            vertical-align: middle; 
+            overflow-wrap: anywhere; 
+            word-break: break-word; 
+          }
           .report-table th { background-color: #f3f4f6; font-weight: bold; text-transform: uppercase; }
+          
           .text-right { text-align: right !important; }
           .text-center { text-align: center !important; }
           
-          .spacer { flex-grow: 1; }
+          /* Summary and Footer */
+          .page-summary { 
+            border: 1px solid #000; 
+            padding: 8px 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            background-color: #f8f9fa; 
+            font-size: 11px; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            border-radius: 2px;
+          }
+          .page-footer { text-align: right; font-size: 9px; color: #333; margin-top: 10px; }
           
-          .page-summary { border: 1px solid #000; padding: 10px; display: flex; justify-content: space-around; background-color: #f8f9fa; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
-          .grand-summary { border: 2px solid #000; padding: 12px; display: flex; justify-content: space-around; background-color: #e2e8f0; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-          
-          .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-          .status-paid { background-color: #dcfce7; color: #166534; }
-          .status-partial { background-color: #dbeafe; color: #1e40af; }
-          .status-pending { background-color: #ffedd5; color: #9a3412; }
-          .page-footer { text-align: right; font-size: 10px; color: #555; border-top: 1px solid #ddd; padding-top: 5px; }
+          /* Badges */
+          .status-badge { display: inline-block; padding: 2px 4px; border-radius: 2px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+          .status-paid { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+          .status-partial { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+          .status-pending { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
           
           .no-print { display: none !important; }
-          @media screen {
-            .page-wrapper { border: 1px solid #ddd; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: 20px auto; max-width: 297mm; background: white; }
-            body { background: #f0f2f5; }
+
+          /* Print Overrides */
+          @media print {
+            body { background: white; }
+            .page-wrapper { margin: 0; padding: 0; border: none; box-shadow: none; width: 100%; min-height: auto; }
+            .report-table th, .report-table td { padding: 4px; }
           }
         `}
       </style>
@@ -255,25 +261,22 @@ const EventBillHistoryReportContent = () => {
       {pages.map((pageBills, pageIndex) => {
         const pageNum = pageIndex + 1;
         const totalPages = pages.length;
-        const isLastPage = pageNum === totalPages;
         
         const pageBillCount = pageBills.length;
-        const pagePaidTotal = pageBills.reduce((sum, b) => {
-          const p = Number(b?.totalPaid);
-          return sum + (isNaN(p) ? 0 : p);
-        }, 0);
+        const pagePaidTotal = pageBills.reduce((sum, b) => sum + (Number(b?.totalPaid) || 0), 0);
         
         return (
-          <div key={'page-' + pageNum} className="page-wrapper">
+          <div key={`page-${pageNum}`} className="page-wrapper a4-report-page">
             <div className="report-header">
-              <h1 className="report-title">E-MOI BILL History Report</h1>
+              <h2 className="brand-title">MOI BILL</h2>
+              <h1 className="report-title">E-MOI BILL HISTORY REPORT</h1>
               <div className="report-meta">
                 <div>
                   <strong>Event:</strong> {eventName || 'All Events'} <br/>
                   <strong>Date Range:</strong> {dateStr}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <strong>Generated:</strong> {new Date().toLocaleString('en-IN')} <br/>
+                  <strong>Generated:</strong> {new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                 </div>
               </div>
             </div>
@@ -281,21 +284,20 @@ const EventBillHistoryReportContent = () => {
             <table className="report-table">
               <thead>
                 <tr>
-                  <th style={{ width: '5%' }}>No.</th>
-                  <th style={{ width: '20%' }}>Customer Name</th>
-                  <th style={{ width: '15%' }}>S/O Name</th>
-                  <th style={{ width: '15%' }}>Native Place</th>
+                  <th style={{ width: '4%' }} className="text-center">No</th>
+                  <th style={{ width: '18%' }}>Customer</th>
+                  <th style={{ width: '14%' }}>S/O</th>
+                  <th style={{ width: '18%' }}>Native Place</th>
                   <th style={{ width: '12%' }}>Phone</th>
-                  <th style={{ width: '13%' }}>Event</th>
-                  <th className="text-right" style={{ width: '10%' }}>Paid</th>
-                  <th className="text-center" style={{ width: '10%' }}>Status</th>
+                  <th style={{ width: '14%' }}>Event</th>
+                  <th style={{ width: '12%' }} className="text-right">Paid</th>
+                  <th style={{ width: '8%' }} className="text-center">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {pageBills.map((b, index) => {
                   const globalIndex = (pageIndex * ROWS_PER_PAGE) + index + 1;
                   
-                  // Safely handle potentially null/undefined objects
                   const custSnap = b?.customerSnapshot || {};
                   const custRef = b?.customerId || {};
                   
@@ -310,18 +312,18 @@ const EventBillHistoryReportContent = () => {
 
                   return (
                     <tr key={b?._id || globalIndex}>
-                      <td>{globalIndex}</td>
+                      <td className="text-center">{globalIndex}</td>
                       <td>{custName}</td>
                       <td>{sonOf}</td>
                       <td>{nativePlace}</td>
                       <td>{phone}</td>
                       <td>
-                        <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{b?.eventType || '-'}</div>
-                        <div style={{ fontSize: '9px', color: '#555' }}>{formatDate(b?.eventDate || b?.createdAt)}</div>
+                        <div style={{ fontWeight: 'bold' }}>{b?.eventType || '-'}</div>
+                        <div>{formatDate(b?.eventDate || b?.createdAt)}</div>
                       </td>
                       <td className="text-right" style={{ fontWeight: 'bold' }}>{formatCurrency(b?.totalPaid)}</td>
                       <td className="text-center">
-                        <span className={`status-badge ` + statusClass}>{b?.paymentStatus || 'Pending'}</span>
+                        <span className={`status-badge ${statusClass}`}>{b?.paymentStatus || 'PENDING'}</span>
                       </td>
                     </tr>
                   );
@@ -329,14 +331,10 @@ const EventBillHistoryReportContent = () => {
               </tbody>
             </table>
 
-            <div className="spacer"></div>
-
             <div className="page-summary">
-              <div>Page {pageNum} Bill Count: {pageBillCount}</div>
-              <div>Page {pageNum} Paid Total: {formatCurrency(pagePaidTotal)}</div>
+              <span>Page {pageNum} Bill Count: {pageBillCount}</span>
+              <span>Page {pageNum} Total Paid: {formatCurrency(pagePaidTotal)}</span>
             </div>
-
-
 
             <div className="page-footer">
               Page {pageNum} of {totalPages}
