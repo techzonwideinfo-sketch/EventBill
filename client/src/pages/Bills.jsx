@@ -11,7 +11,7 @@ const Bills = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('Today');
+  const [dateFilter, setDateFilter] = useState('');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [eventTypesList, setEventTypesList] = useState([]);
@@ -37,21 +37,23 @@ const Bills = () => {
     
     if (dateFilter) {
       const today = new Date();
+      // Use local date parts to avoid UTC shift issues (e.g. IST +05:30)
+      const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
       if (dateFilter === 'Today') {
-        params.startDate = today.toISOString().split('T')[0];
+        params.startDate = localDate(today);
         params.endDate = params.startDate;
       } else if (dateFilter === 'Yesterday') {
         const yest = new Date(today);
         yest.setDate(yest.getDate() - 1);
-        params.startDate = yest.toISOString().split('T')[0];
+        params.startDate = localDate(yest);
         params.endDate = params.startDate;
       } else if (dateFilter === 'This Week') {
-        const first = today.getDate() - today.getDay();
-        const firstDay = new Date(today.setDate(first));
-        params.startDate = firstDay.toISOString().split('T')[0];
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+        params.startDate = localDate(firstDay);
       } else if (dateFilter === 'This Month') {
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        params.startDate = firstDay.toISOString().split('T')[0];
+        params.startDate = localDate(firstDay);
       } else if (dateFilter === 'Custom') {
         if (customStart) params.startDate = customStart;
         if (customEnd) params.endDate = customEnd;

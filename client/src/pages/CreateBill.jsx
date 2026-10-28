@@ -184,8 +184,8 @@ const CreateBill = () => {
     return (
       <PaymentScreen 
         bill={createdBill} 
-        onComplete={(updatedBill) => navigate(`/bills/${updatedBill._id}/receipt`, { state: { bill: updatedBill } })} 
-        onCancel={() => navigate(`/bills/${createdBill._id}/receipt`, { state: { bill: createdBill } })} 
+        onComplete={(updatedBill) => navigate(`/bills/${updatedBill._id}/receipt`, { state: { bill: updatedBill, eventId } })} 
+        onCancel={() => navigate(`/bills/${createdBill._id}/receipt`, { state: { bill: createdBill, eventId } })} 
       />
     );
   }

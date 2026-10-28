@@ -13,6 +13,7 @@ const Receipt = () => {
   const [bill, setBill] = useState(location.state?.bill || null);
   const [loading, setLoading] = useState(!location.state?.bill);
   const [error, setError] = useState(null);
+  const passedEventId = location.state?.eventId || null;
 
   useEffect(() => {
     if (!bill) {
@@ -167,7 +168,7 @@ const Receipt = () => {
              </button>
           </div>
           
-          <button onClick={() => navigate('/select-event')} className="w-full py-4 mt-2 text-gray-500 font-bold uppercase tracking-wider hover:text-gray-900 transition-colors">
+          <button onClick={() => navigate(passedEventId ? `/create-bill/${passedEventId}` : '/select-event')} className="w-full py-4 mt-2 text-gray-500 font-bold uppercase tracking-wider hover:text-gray-900 transition-colors">
             NEW BILL
           </button>
         </div>
