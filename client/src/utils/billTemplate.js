@@ -243,6 +243,7 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       }
       .thank-you-sub {
         font-size: 7pt;
+        font-weight: 700;
         color: #555;
         margin-top: 0.5mm;
       }
@@ -260,6 +261,7 @@ export const generateHTML = (bill, fontBase64 = '', width = '80mm') => {
       }
       .company-contact {
         font-size: 7pt;
+        font-weight: 700;
         color: #555;
         margin-top: 0.5mm;
       }
