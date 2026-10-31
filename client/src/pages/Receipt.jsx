@@ -253,14 +253,14 @@ const Receipt = () => {
 
           {/* Thank You */}
           <div className="text-center my-3">
-            <div className="text-xs font-bold italic text-gray-700">Thank you for choosing us!</div>
-            <div className="text-[10px] font-bold text-gray-500 mt-0.5">Making your special moments memorable.</div>
+            <div className="text-xs font-bold italic" style={{ color: '#000000' }}>Thank you for choosing us!</div>
+            <div className="text-[10px] font-bold mt-0.5" style={{ color: '#000000' }}>Making your special moments memorable.</div>
           </div>
 
           {/* Company Footer */}
           <div className="text-center mt-2">
-            <div className="text-xs font-bold text-gray-800">Venba Tech Solutions</div>
-            <div className="text-[10px] font-bold text-gray-500 mt-0.5">Contact: 7006472735 | 6362146398</div>
+            <div className="text-xs font-bold" style={{ color: '#000000' }}>Venba Tech Solutions</div>
+            <div className="text-[10px] font-bold mt-0.5" style={{ color: '#000000' }}>Contact: 7006472735 | 6362146398</div>
           </div>
 
         </div>

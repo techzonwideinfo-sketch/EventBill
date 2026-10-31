@@ -233,12 +233,12 @@ export const generateHTML = (bill, fontBase64 = '') => {
         font-size: 8.5pt;
         font-weight: 700;
         font-style: italic;
-        color: #222;
+        color: #000000;
       }
       .thank-you-sub {
         font-size: 7pt;
         font-weight: 700;
-        color: #555;
+        color: #000000;
         margin-top: 0.5mm;
       }
 
@@ -251,12 +251,12 @@ export const generateHTML = (bill, fontBase64 = '') => {
       .company-name {
         font-size: 8pt;
         font-weight: 700;
-        color: #111;
+        color: #000000;
       }
       .company-contact {
         font-size: 7pt;
         font-weight: 700;
-        color: #555;
+        color: #000000;
         margin-top: 0.5mm;
       }
     </style>
